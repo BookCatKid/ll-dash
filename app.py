@@ -8,10 +8,11 @@ load_dotenv()
 
 def _database_url():
     url = os.getenv('DATABASE_URL', 'postgresql://localhost/lldash')
-    # Some hosts (e.g. Heroku, older Render) hand out postgres:// URLs,
-    # which SQLAlchemy no longer accepts.
-    if url.startswith('postgres://'):
-        url = url.replace('postgres://', 'postgresql://', 1)
+    # Pin the driver explicitly: SQLAlchemy 2.1+ defaults postgresql:// to psycopg 3.
+    for prefix in ('postgres://', 'postgresql://'):
+        if url.startswith(prefix):
+            url = 'postgresql+psycopg2://' + url[len(prefix):]
+            break
     return url
 
 
