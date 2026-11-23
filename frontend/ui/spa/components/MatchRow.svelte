@@ -1,6 +1,6 @@
 <script>
   import MatchAlliances from './MatchAlliances.svelte';
-  import { formatTime } from '../lib/helpers.js';
+  import { formatTime, allianceFor } from '../lib/helpers.js';
   import { matchOutcome, fieldLabel, estimatedMatchOutcome } from '../lib/match-data.js';
 
   let { match, teamNumber, onMatch = () => {}, onTeam = () => {}, metrics = {} } = $props();
@@ -10,6 +10,15 @@
   const outcome = $derived(matchOutcome(match, teamNumber));
   const played = $derived(match.scoreRedFinal != null && match.scoreBlueFinal != null);
   const estimate = $derived(estimatedMatchOutcome(match, metrics?.oprs));
+  const favoredOurs = $derived(
+    ours &&
+      estimate != null &&
+      estimate.winner !== 'Tie' &&
+      estimate.winner === allianceFor(match, teamNumber),
+  );
+  const favoredOpponents = $derived(
+    ours && estimate != null && estimate.winner !== 'Tie' && !favoredOurs,
+  );
   const officialField = $derived(metrics?.fields?.[String(match.matchNumber)] ?? null);
   const matchDetail = $derived({
     ...match,
@@ -66,8 +75,13 @@
         class="match-card-probability"
         class:red={estimate.winner === 'Red'}
         class:blue={estimate.winner === 'Blue'}
+        class:favored-ours={favoredOurs}
+        class:favored-opponents={favoredOpponents}
       >
-        {estimate.winner === 'Tie' ? '50% each' : `${estimate.winner} win ~${estimate.winChance}%`}
+        {#if estimate.winner === 'Tie'}Even · 50% each
+        {:else}
+          {estimate.winner} favored{ours ? (favoredOurs ? ' (ours)' : ' (opponents)') : ''} · ~{estimate.winChance}%
+        {/if}
       </span>
     </div>
   {/if}

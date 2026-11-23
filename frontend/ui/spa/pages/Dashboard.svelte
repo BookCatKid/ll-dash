@@ -115,8 +115,6 @@
           <div class="stat-value">{rank.sortOrder1?.toFixed(3) ?? '–'}</div>
           <div class="stat-label">RP avg</div>
         </div>
-      </div>
-      <div class="stat-grid stat-grid-3" style="margin-top:.6rem">
         <div class="stat-box">
           <div class="stat-value">{average(played, teamScore)}</div>
           <div class="stat-label">Avg score</div>
@@ -128,6 +126,22 @@
         <div class="stat-box">
           <div class="stat-value">{played.length ? Math.max(...played.map(teamScore)) : '–'}</div>
           <div class="stat-label">High score</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{rank.sortOrder2?.toFixed(2) ?? '–'}</div>
+          <div class="stat-label">SO₂</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">
+            {rank.matchesCounted != null && rank.matchesPlayed != null
+              ? `${rank.matchesCounted}/${rank.matchesPlayed}`
+              : '–'}
+          </div>
+          <div class="stat-label">Counted / played</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-value">{rank.dq ?? '–'}</div>
+          <div class="stat-label">DQ</div>
         </div>
       </div>
     </div>

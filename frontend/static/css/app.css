@@ -277,6 +277,14 @@ html.light .bottom-nav {
     color:var(--text2);
     margin-top:.35rem;
 }
+.stat-grid-3 .stat-label { overflow-wrap: normal; line-height: 1.25; }
+@media (max-width: 390px) {
+    .stat-grid-3 { gap: .4rem; }
+    .stat-grid-3 .stat-box { padding: .7rem .3rem; }
+    .stat-grid-3 .stat-value { font-size: 1.35rem; }
+    .stat-grid-3 .stat-label { font-size: .67rem; }
+}
+
 
 /* Match rows */
 .match-row {
@@ -1555,6 +1563,9 @@ html.light .opr-cmp-r{color:#c4313f}
 .match-card-probability { font-weight: 500; }
 .match-card-probability.red { color: var(--alliance-red); }
 .match-card-probability.blue { color: var(--alliance-blue); }
+.match-card-probability.favored-ours { color: var(--green); }
+.match-card-probability.favored-opponents { color: var(--red); }
+
 .match-card .match-alliance-score { font-size: 1.35rem; }
 @media (max-width: 390px) {
     .match-card { padding: .6rem; }
