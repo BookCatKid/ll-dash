@@ -10,7 +10,7 @@ async function rankings() {
   if (currentPage !== 'rankings') return;  // stale fetch — user navigated away
 
   const ranks = rankData?.rankings || rankData?.Rankings || [];
-  if (!ranks.length) { renderPage('<div class="empty-state"><div class="empty-icon">◬</div><div>No rankings yet.</div></div>'); return; }
+  if (!ranks.length) { renderPage('<div class="empty-state"><div>No rankings yet.</div></div>'); return; }
   ranks.forEach(r=>{ window._teamNames=window._teamNames||{}; window._teamNames[r.teamNumber]=r.teamName||''; });
 
   // Build FTCScout OPR maps (global + local)
@@ -131,29 +131,22 @@ async function rankings() {
   }
 
   renderPage(`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div class="page-title" style="margin-bottom:0">Rankings</div>
-      <button class="icon-btn" onclick="rankings()" title="Reload">↻</button>
-    </div>
-    <div style="font-size:.7rem;font-family:var(--mono);color:var(--text2);margin-bottom:.5rem">${appSettings.active_event_name||'Event'} · ${ranks.length} teams · Tap headers to sort · Tap row for details</div>
+    <div style="font-size:.7rem;font-family:var(--mono);color:var(--text2);margin-bottom:.5rem">${ranks.length} teams</div>
     <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem">
-      <div style="display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden;font-size:.68rem;font-family:var(--mono)">
-        <button class="opr-scope-btn active" data-scope="global" style="padding:.3rem .6rem;border:none;cursor:pointer;background:var(--accent);color:var(--bg1);font-weight:700;font-size:.68rem;font-family:var(--mono)">Global OPR</button>
-        <button class="opr-scope-btn" data-scope="local" style="padding:.3rem .6rem;border:none;cursor:pointer;background:transparent;color:var(--text2);font-weight:500;font-size:.68rem;font-family:var(--mono)">Event OPR</button>
+      <div class="opr-scope-control">
+        <button class="opr-scope-btn active" data-scope="global">Global OPR</button>
+        <button class="opr-scope-btn" data-scope="local">Event OPR</button>
       </div>
       <span style="font-size:.6rem;font-family:var(--mono);color:var(--text3)" id="opr-scope-hint">Season-wide npOPR</span>
     </div>
     <div style="overflow-x:auto" id="rank-table-container"></div>
-    <div style="margin-top:.5rem;font-size:.6rem;font-family:var(--mono);color:var(--text3)">OPR values from FTCScout · Tap any team for full profile</div>
   `);
 
   document.querySelectorAll('.opr-scope-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       oprScope = btn.dataset.scope;
-      document.querySelectorAll('.opr-scope-btn').forEach(b => {
-        b.style.background = b.dataset.scope === oprScope ? 'var(--accent)' : 'transparent';
-        b.style.color = b.dataset.scope === oprScope ? 'var(--bg1)' : 'var(--text2)';
-        b.style.fontWeight = b.dataset.scope === oprScope ? '700' : '500';
+      document.querySelectorAll('.opr-scope-btn').forEach(button => {
+        button.classList.toggle('active', button.dataset.scope === oprScope);
       });
       document.getElementById('opr-scope-hint').textContent = oprScope === 'global' ? 'Season-wide npOPR' : 'This event only';
       teamsData = mergeOpr();
@@ -173,7 +166,7 @@ async function openTeamModal(teamNum) {
     <div class="modal-sheet">
       <div class="modal-header">
         <span class="modal-title">Team ${teamNum}</span>
-        <button class="modal-close" id="tp-close">✕</button>
+        <button class="modal-close" id="tp-close" title="Close" aria-label="Close">${uiIcon('x')}</button>
       </div>
       <div class="modal-body" id="tp-body"><div class="loading">Loading</div></div>
     </div>`;

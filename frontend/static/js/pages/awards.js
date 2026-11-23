@@ -81,9 +81,7 @@ async function awards() {
 
   if (!entries.length) {
     renderPage(`
-      <div class="page-title">Awards</div>
-      <div class="empty-state"><div class="empty-icon">🏆</div><div>No awards posted yet.</div>
-      <div style="margin-top:.5rem;font-size:.75rem">Awards appear here once the event publishes them.</div></div>`);
+      <div class="empty-state">No awards posted yet.</div>`);
     return;
   }
 
@@ -111,7 +109,7 @@ async function awards() {
   const groupCard = g => `
     <div class="card">
       <div class="card-header" style="margin-bottom:.4rem">
-        <span class="card-title">🏆 ${escHtml(g.base)}</span>
+        <span class="card-title">${escHtml(g.base)}</span>
       </div>
       ${g.recipients.map(r => {
         const team  = r.teamNumber;
@@ -134,11 +132,6 @@ async function awards() {
   const perf   = groups.filter(g => g.category === 'performance');
 
   renderPage(`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div class="page-title" style="margin-bottom:0">Awards</div>
-      <button class="icon-btn" onclick="awards()" title="Reload">↻</button>
-    </div>
-    <div style="font-size:.73rem;font-family:var(--mono);color:var(--text2);margin-bottom:.75rem">${escHtml(appSettings.active_event_name || '')} · ${entries.length} award${entries.length > 1 ? 's' : ''}</div>
     ${perf.length ? `<div class="section-label">Performance Awards</div>${perf.map(groupCard).join('')}` : ''}
     ${judged.length ? `<div class="section-label" style="margin-top:.75rem">Judged Awards</div>${judged.map(groupCard).join('')}` : ''}
   `);

@@ -1,10 +1,15 @@
-const CACHE = 'ftcdash-v8';
+const CACHE = 'ftcdash-v14';
 const STATIC = ['/static/css/app.css','/static/js/api.js','/static/js/app.js','/static/js/setup.js',
   '/static/js/pages/dashboard.js','/static/js/pages/match-scoring.js',
   '/static/js/pages/schedule.js','/static/js/pages/rankings.js',
   '/static/js/pages/scouting.js','/static/js/pages/alliance.js','/static/js/pages/simulator.js',
   '/static/js/pages/hub.js','/static/js/pages/bigscreen.js','/static/js/pages/playoffs.js',
-  '/static/js/pages/awards.js'];
+  '/static/js/pages/awards.js',
+  ...['layout-dashboard','calendar-days','chart-no-axes-column','clipboard-list','users',
+      'chart-line','notebook-tabs','monitor','trophy','medal',
+      'refresh-cw','settings','x','trash-2','arrow-up','arrow-down',
+      'lock-keyhole','download','rotate-ccw','plus','delete','arrow-right']
+    .map(icon => `/static/icons/nav/${icon}.svg`)];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).then(()=>self.skipWaiting()));

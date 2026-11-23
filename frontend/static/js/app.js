@@ -25,16 +25,16 @@ const LEGACY_SCOUT_KEYS = ['driver_rating','auto_score','teleop_score','endgame_
 
 // All pages the bottom nav can show, in default order
 const NAV_PAGES = {
-  dashboard: { icon:'◈', label:'Dash' },
-  schedule:  { icon:'◷', label:'Schedule' },
-  rankings:  { icon:'◬', label:'Rankings' },
-  scouting:  { icon:'◉', label:'Scout' },
-  alliance:  { icon:'⬡', label:'Alliance' },
-  simulator: { icon:'▲', label:'Sim' },
-  hub:       { icon:'⊞', label:'Hub' },
-  bigscreen: { icon:'⛶', label:'Display' },
-  playoffs:  { icon:'🏁', label:'Playoffs' },
-  awards:    { icon:'🏆', label:'Awards' },
+  dashboard: { icon:'layout-dashboard', label:'Dash' },
+  schedule:  { icon:'calendar-days', label:'Schedule' },
+  rankings:  { icon:'chart-no-axes-column', label:'Rankings' },
+  scouting:  { icon:'clipboard-list', label:'Scout' },
+  alliance:  { icon:'users', label:'Alliance' },
+  simulator: { icon:'chart-line', label:'Sim' },
+  hub:       { icon:'notebook-tabs', label:'Hub' },
+  bigscreen: { icon:'monitor', label:'Display' },
+  playoffs:  { icon:'trophy', label:'Playoffs' },
+  awards:    { icon:'medal', label:'Awards' },
 };
 const DEFAULT_NAV_CONFIG = Object.keys(NAV_PAGES).map(key => ({key, visible:true}));
 
@@ -88,7 +88,7 @@ function applyDisplayMode(mode, density) {
 function brandHtml(name) {
   const parts = String(name||'LL Dash').trim().split(/\s+/);
   if (parts.length === 1) return escHtml(parts[0]);
-  return `${escHtml(parts[0])}<span>${escHtml(parts.slice(1).join(' '))}</span>`;
+  return `${escHtml(parts[0])} <span>${escHtml(parts.slice(1).join(' '))}</span>`;
 }
 function applyBranding(name, teamNumber) {
   name = name || 'LL Dash';
@@ -246,6 +246,24 @@ function navConfig(){
   const nav = appSettings.nav;
   return Array.isArray(nav) && nav.length ? nav : DEFAULT_NAV_CONFIG;
 }
+const UI_ICONS = new Set([
+  'refresh-cw', 'settings', 'x', 'trash-2', 'arrow-up',
+  'arrow-down', 'lock-keyhole', 'download', 'rotate-ccw', 'plus',
+  'delete', 'arrow-right',
+]);
+
+function uiIcon(name) {
+  if (!UI_ICONS.has(name)) return '';
+  return `<span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/${name}.svg')"></span>`;
+}
+
+function navIcon(key) {
+  const icon = NAV_PAGES[key]?.icon;
+  return icon
+    ? `<span class="nav-icon" aria-hidden="true" style="--nav-icon:url('/static/icons/nav/${icon}.svg')"></span>`
+    : '';
+}
+
 function buildNav(){
   const el = document.getElementById('bottom-nav');
   if (!el) return;
@@ -253,18 +271,32 @@ function buildNav(){
   el.innerHTML = navConfig()
     .filter(n => n.visible && NAV_PAGES[n.key] && !hidden.includes(n.key))
     .map(n => `
-      <button class="nav-btn ${n.key===currentPage?'active':''}" data-page="${n.key}">
-        <span class="nav-icon">${NAV_PAGES[n.key].icon}</span>
+      <button type="button" class="nav-btn ${n.key===currentPage?'active':''}" data-page="${n.key}" ${n.key===currentPage?'aria-current="page"':''}>
+        ${navIcon(n.key)}
         <span class="nav-label">${NAV_PAGES[n.key].label}</span>
       </button>`).join('');
-  el.querySelectorAll('.nav-btn').forEach(btn=>
-    btn.addEventListener('click',()=>navigateTo(btn.dataset.page))
+  el.querySelectorAll('.nav-btn').forEach(btn =>
+    btn.addEventListener('click', () => navigateTo(btn.dataset.page))
   );
+  el.querySelector('.nav-btn.active')?.scrollIntoView({block:'nearest', inline:'nearest'});
 }
 function navigateTo(page){
   if (window._bsCleanup){ try{window._bsCleanup();}catch(e){} window._bsCleanup=null; }
   currentPage=page;
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  const nav = document.getElementById('bottom-nav');
+  nav?.querySelectorAll('.nav-btn').forEach(button => {
+    const active = button.dataset.page === page;
+    button.classList.toggle('active', active);
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  });
+  const selected = nav?.querySelector('.nav-btn.active');
+  if (selected && nav.scrollWidth > nav.clientWidth) {
+    nav.scrollTo({
+      left: selected.offsetLeft - (nav.clientWidth - selected.offsetWidth) / 2,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+  }
   ({dashboard,schedule,rankings,scouting,alliance,simulator,hub,bigscreen,playoffs,awards})[page]?.();
 }
 
@@ -274,7 +306,19 @@ function setupSettings(){
   document.getElementById('settings-close').addEventListener('click',closeSettings);
   document.getElementById('settings-backdrop').addEventListener('click',closeSettings);
   document.getElementById('logout-btn').addEventListener('click',async()=>{await API.logout();location.reload();});
-  document.getElementById('refresh-btn').addEventListener('click',()=>{showToast('Refreshing…');navigateTo(currentPage);});
+  document.getElementById('refresh-btn').addEventListener('click', () => {
+    if (currentPage === 'scouting') {
+      if (document.getElementById('tab-view')?.classList.contains('active')) {
+        renderScoutNotes();
+        return;
+      }
+      if (document.getElementById('tab-search')?.classList.contains('active')) {
+        renderTeamSearch();
+        return;
+      }
+    }
+    navigateTo(currentPage);
+  });
   document.querySelectorAll('#settings-tabs .tab').forEach(t=>
     t.addEventListener('click',()=>renderSettingsTab(t.dataset.stab))
   );
@@ -409,8 +453,8 @@ function renderSettingsDisplay(c){
       <label class="setting-label">Mode &amp; Density</label>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
         <div class="seg-toggle" id="disp-mode">
-          <button data-v="dark"  class="${mode==='dark'?'on':''}">🌙 Dark</button>
-          <button data-v="light" class="${mode==='light'?'on':''}">☀️ Light</button>
+          <button data-v="dark"  class="${mode==='dark'?'on':''}">Dark</button>
+          <button data-v="light" class="${mode==='light'?'on':''}">Light</button>
         </div>
         <div class="seg-toggle" id="disp-density">
           <button data-v="normal"  class="${density==='normal'?'on':''}">Normal</button>
@@ -506,7 +550,7 @@ function renderSettingsPages(c){
     c.innerHTML=`
       <div class="setting-group">
         <label class="setting-label">Navigation Tabs</label>
-        <div class="setting-hint" style="margin:0 0 .5rem">Reorder with ↑↓, untick to hide a tab. Dashboard is always shown.</div>
+
         <div id="nav-list">${nav.map((n,i)=>{
           const meta=NAV_PAGES[n.key]||{icon:'•',label:n.key};
           const locked=n.key==='dashboard';
@@ -516,10 +560,10 @@ function renderSettingsPages(c){
               <label class="sf-req-label" style="margin-right:0">
                 <input type="checkbox" class="nav-vis" data-i="${i}" ${n.visible?'checked':''} ${locked?'disabled':''}/>
               </label>
-              <span style="font-size:.95rem;width:1.4rem;text-align:center">${meta.icon}</span>
+              <span class="nav-setting-icon">${navIcon(n.key)}</span>
               <span style="flex:1;font-size:.85rem;font-weight:600">${escHtml(meta.label)}${locked?' <span style="color:var(--text3);font-size:.65rem">(always on)</span>':''}</span>
-              <button class="icon-btn cfg-mini" data-up="${i}" ${i===0?'disabled':''}>↑</button>
-              <button class="icon-btn cfg-mini" data-down="${i}" ${i===nav.length-1?'disabled':''}>↓</button>
+              <button class="icon-btn cfg-mini" data-up="${i}" ${i===0?'disabled':''} aria-label="Move up" title="Move up">${uiIcon('arrow-up')}</button>
+              <button class="icon-btn cfg-mini" data-down="${i}" ${i===nav.length-1?'disabled':''} aria-label="Move down" title="Move down">${uiIcon('arrow-down')}</button>
             </div>
           </div>`;}).join('')}
         </div>
@@ -549,7 +593,7 @@ function renderSettingsPages(c){
         <div class="device-tab-grid">${nav.filter(n=>n.visible&&n.key!=='dashboard'&&NAV_PAGES[n.key]).map(n=>`
           <label class="sf-req-label" style="margin:0;font-size:.78rem">
             <input type="checkbox" class="dev-vis" data-k="${n.key}" ${deviceHiddenTabs().includes(n.key)?'':'checked'}/>
-            ${NAV_PAGES[n.key].icon} ${escHtml(NAV_PAGES[n.key].label)}
+            ${navIcon(n.key)} ${escHtml(NAV_PAGES[n.key].label)}
           </label>`).join('')}
         </div>
       </div>
@@ -616,22 +660,22 @@ function renderSettingsData(c){
     <div class="setting-group">
       <label class="setting-label">Scouting Notes</label>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" data-dl="/api/export/scouting?format=csv">⬇ CSV (this event)</button>
-        <button class="btn btn-secondary btn-sm" data-dl="/api/export/scouting?format=json">⬇ JSON (this event)</button>
-        <button class="btn btn-secondary btn-sm" data-dl="/api/export/scouting?format=csv&all=1">⬇ CSV (everything)</button>
+        <button class="btn btn-secondary btn-sm" data-dl="/api/export/scouting?format=csv">${uiIcon('download')} CSV (this event)</button>
+        <button class="btn btn-secondary btn-sm" data-dl="/api/export/scouting?format=json">${uiIcon('download')} JSON (this event)</button>
+        <button class="btn btn-secondary btn-sm" data-dl="/api/export/scouting?format=csv&all=1">${uiIcon('download')} CSV (everything)</button>
       </div>
     </div>
     <div class="setting-group">
       <label class="setting-label">Alliance Flags</label>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" data-dl="/api/export/flags?format=csv">⬇ CSV (this event)</button>
-        <button class="btn btn-secondary btn-sm" data-dl="/api/export/flags?format=json">⬇ JSON (this event)</button>
+        <button class="btn btn-secondary btn-sm" data-dl="/api/export/flags?format=csv">${uiIcon('download')} CSV (this event)</button>
+        <button class="btn btn-secondary btn-sm" data-dl="/api/export/flags?format=json">${uiIcon('download')} JSON (this event)</button>
       </div>
     </div>
     <div class="setting-group">
       <label class="setting-label">Hub Notes &amp; Checklists</label>
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
-        <button class="btn btn-secondary btn-sm" data-dl="/api/export/hub">⬇ JSON</button>
+        <button class="btn btn-secondary btn-sm" data-dl="/api/export/hub">${uiIcon('download')} JSON</button>
       </div>
     </div>`;
   c.querySelectorAll('[data-dl]').forEach(b=>b.addEventListener('click',()=>dl(b.dataset.dl)));
@@ -655,9 +699,9 @@ function renderSettingsScoutFields(c){
           ${f.type==='select'?`<input class="setting-input sf-options" data-i="${i}" value="${escHtml((f.options||[]).join(', '))}" placeholder="Options, comma separated" style="margin-top:.35rem"/>`:''}
           <div class="cfg-row-actions">
             <label class="sf-req-label"><input type="checkbox" class="sf-req" data-i="${i}" ${f.required?'checked':''}/> required</label>
-            <button class="icon-btn cfg-mini" data-up="${i}" ${i===0?'disabled':''}>↑</button>
-            <button class="icon-btn cfg-mini" data-down="${i}" ${i===wf.length-1?'disabled':''}>↓</button>
-            <button class="icon-btn cfg-mini cfg-del" data-del="${i}">✕</button>
+            <button class="icon-btn cfg-mini" data-up="${i}" ${i===0?'disabled':''} aria-label="Move up" title="Move up">${uiIcon('arrow-up')}</button>
+            <button class="icon-btn cfg-mini" data-down="${i}" ${i===wf.length-1?'disabled':''} aria-label="Move down" title="Move down">${uiIcon('arrow-down')}</button>
+            <button class="icon-btn cfg-mini cfg-del" data-del="${i}" aria-label="Remove" title="Remove">${uiIcon('trash-2')}</button>
           </div>
         </div>`).join('')}
       </div>
@@ -707,9 +751,9 @@ function renderSettingsFlags(c){
             <input class="setting-input fc-icon" data-i="${i}" value="${escHtml(f.icon||'')}" placeholder="🎯" maxlength="4" style="width:58px;flex-shrink:0;text-align:center"/>
           </div>
           <div class="cfg-row-actions">
-            <button class="icon-btn cfg-mini" data-up="${i}" ${i===0?'disabled':''}>↑</button>
-            <button class="icon-btn cfg-mini" data-down="${i}" ${i===wc.length-1?'disabled':''}>↓</button>
-            <button class="icon-btn cfg-mini cfg-del" data-del="${i}">✕</button>
+            <button class="icon-btn cfg-mini" data-up="${i}" ${i===0?'disabled':''} aria-label="Move up" title="Move up">${uiIcon('arrow-up')}</button>
+            <button class="icon-btn cfg-mini" data-down="${i}" ${i===wc.length-1?'disabled':''} aria-label="Move down" title="Move down">${uiIcon('arrow-down')}</button>
+            <button class="icon-btn cfg-mini cfg-del" data-del="${i}" aria-label="Remove" title="Remove">${uiIcon('trash-2')}</button>
           </div>
         </div>`).join('')}
       </div>
@@ -809,7 +853,7 @@ function showToast(msg,ms=2200){
 // ── Page helpers ──────────────────────────────────────────────
 function renderPage(html){document.getElementById('page-container').innerHTML=html;}
 function loadingPage(){renderPage('<div class="loading">Loading</div>');}
-function noEventPage(){renderPage(`<div class="empty-state"><div class="empty-icon">◈</div><div>No event selected.</div><div style="margin-top:.5rem;font-size:.75rem">Tap ⚙ to pick an event.</div></div>`);}
+function noEventPage(){renderPage(`<div class="empty-state">Choose an event in Settings.</div>`);}
 
 function formatTime(iso){
   if (!iso) return '--';

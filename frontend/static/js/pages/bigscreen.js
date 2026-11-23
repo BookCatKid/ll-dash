@@ -178,8 +178,8 @@ async function bigscreen() {
         <div class="bs-event">${escHtml(appSettings.active_event_name || '')}</div>
         <div class="bs-clock" id="bs-clock"></div>
         <div class="bs-controls">
-          ${enabled.length > 1 ? `<button class="icon-btn ${cycle ? 'bs-toggle-on' : ''}" id="bs-cycle-btn" title="Auto-cycle panels every ${cycleMs / 1000}s">⟳</button>` : ''}
-          <button class="icon-btn" id="bs-exit-btn" title="Exit big screen">✕</button>
+          ${enabled.length > 1 ? `<button class="icon-btn ${cycle ? 'bs-toggle-on' : ''}" id="bs-cycle-btn" title="Auto-cycle panels every ${cycleMs / 1000}s" aria-label="Toggle panel cycling">${uiIcon('rotate-ccw')}</button>` : ''}
+          <button class="icon-btn" id="bs-exit-btn" title="Exit big screen" aria-label="Exit big screen">${uiIcon('x')}</button>
         </div>
       </header>
       <div class="bs-grid" style="grid-template-columns:${gridCols}">

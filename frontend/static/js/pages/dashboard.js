@@ -99,7 +99,7 @@ async function dashboard() {
     const opS  = oppS(last);
     const oAuto= ourAuto(last);
     const oppAuto = ourA(last)==='Red'?(last.scoreBlueAuto||0):(last.scoreRedAuto||0);
-    const resultLabel = won ? 'WIN' : isTie ? 'TIE' : 'LOSS';
+    const resultLabel = won ? 'Win' : isTie ? 'Tie' : 'Loss';
     const resultColor = won ? 'var(--green)' : isTie ? 'var(--yellow)' : 'var(--red)';
     const alliance    = ourA(last);
     const allies  = last.teams.filter(t=>t.teamNumber!=TEAM_NUMBER&&t.station?.startsWith(alliance));
@@ -207,7 +207,7 @@ async function dashboard() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Our Matches (${played.length} played)</span>
-          <button class="btn btn-sm btn-secondary" onclick="navigateTo('schedule')">All →</button>
+          <button class="btn btn-sm btn-secondary" onclick="navigateTo('schedule')">All matches</button>
         </div>
         ${rows}
       </div>`;
@@ -220,7 +220,7 @@ async function dashboard() {
       <div class="card">
         <div class="card-header">
           <span class="card-title">Top Teams</span>
-          <button class="btn btn-sm btn-secondary" onclick="navigateTo('rankings')">Full →</button>
+          <button class="btn btn-sm btn-secondary" onclick="navigateTo('rankings')">All rankings</button>
         </div>
         ${rankings.slice(0,5).map(r=>`
           <div class="match-row ${r.teamNumber==TEAM_NUMBER?'our-match':''}" onclick="openTeamModal(${r.teamNumber})" style="cursor:pointer">
@@ -234,11 +234,6 @@ async function dashboard() {
   }
 
   renderPage(`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div class="page-title" style="margin-bottom:0">${brandHtml(appSettings.dashboard_name)}</div>
-      <button class="icon-btn" onclick="dashboard()" title="Reload">↻</button>
-    </div>
-    <div style="font-size:.73rem;font-family:var(--mono);color:var(--text2);margin-bottom:.75rem">${appSettings.active_event_name||'No Event'}</div>
     ${lastMatchHtml}
     ${cdHtml}
     ${statsHtml}

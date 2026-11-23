@@ -1,6 +1,5 @@
 async function hub() {
   renderPage(`
-    <div class="page-title">Team <span>Hub</span></div>
     <div class="tabs">
       <button class="tab active" id="tab-notes">Notes</button>
       <button class="tab" id="tab-new">+ New</button>
@@ -17,7 +16,7 @@ async function renderHubNotes() {
   document.getElementById('hub-content').innerHTML = '<div class="loading">Loading</div>';
   let notes; try { notes = await API.getHubNotes(); } catch(e) { notes = []; }
   if (!notes.length) {
-    document.getElementById('hub-content').innerHTML = `<div class="empty-state"><div class="empty-icon">⊞</div><div>No notes yet.</div><div style="margin-top:.5rem">Tap "+ New" to add one.</div></div>`;
+    document.getElementById('hub-content').innerHTML = `<div class="empty-state">No notes yet.</div>`;
     return;
   }
   document.getElementById('hub-content').innerHTML = notes.map(n=>`
@@ -29,7 +28,7 @@ async function renderHubNotes() {
       <div class="hub-note-content">${n.content}</div>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem">
         <span class="hub-note-meta">${n.author} · ${new Date(n.created_at).toLocaleDateString()}</span>
-        <button class="btn btn-sm" style="color:var(--red);padding:0 .3rem" data-del="${n.id}">✕</button>
+        <button class="btn btn-sm" style="color:var(--red);padding:0 .3rem" data-del="${n.id}" title="Close" aria-label="Close">${uiIcon('x')}</button>
       </div>
     </div>`).join('');
   document.querySelectorAll('[data-del]').forEach(btn => {
@@ -137,7 +136,7 @@ function showAddChecklist() {
   modal.innerHTML = `
     <div class="modal-backdrop" id="cl-back"></div>
     <div class="modal-sheet">
-      <div class="modal-header"><span class="modal-title">New Checklist</span><button class="modal-close" id="cl-close">✕</button></div>
+      <div class="modal-header"><span class="modal-title">New Checklist</span><button class="modal-close" id="cl-close" title="Close" aria-label="Close">${uiIcon('x')}</button></div>
       <div class="modal-body">
         <div class="form-group"><label class="form-label">Name</label><input class="form-input" id="cl-name" placeholder="e.g. Post-Match Checklist"/></div>
         <div class="form-group"><label class="form-label">Category</label>

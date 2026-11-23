@@ -78,7 +78,6 @@ async function alliance() {
   });
 
   renderPage(`
-    <div class="page-title">Alliance</div>
     <div class="tabs">
       <button class="tab active" id="tab-pick">Pick List</button>
       <button class="tab" id="tab-cmp">Compare</button>

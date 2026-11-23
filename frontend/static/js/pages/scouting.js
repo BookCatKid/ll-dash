@@ -65,10 +65,6 @@ function noteHasSections(n) {
 async function scouting() {
   if (!appSettings.active_event_code) { noEventPage(); return; }
   renderPage(`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div class="page-title" style="margin-bottom:0">Scout</div>
-      <button class="icon-btn" id="scout-reload-btn" title="Reload">↻</button>
-    </div>
     <div class="tabs">
       <button class="tab active" id="tab-add">Add Note</button>
       <button class="tab" id="tab-view">View Notes</button>
@@ -78,12 +74,6 @@ async function scouting() {
   document.getElementById('tab-add').addEventListener('click',    ()=>{setActiveTab('tab-add');    renderScoutForm();});
   document.getElementById('tab-view').addEventListener('click',   ()=>{setActiveTab('tab-view');   renderScoutNotes();});
   document.getElementById('tab-search').addEventListener('click', ()=>{setActiveTab('tab-search'); renderTeamSearch();});
-  document.getElementById('scout-reload-btn').addEventListener('click',()=>{
-    const viewTab=document.getElementById('tab-view');
-    if (viewTab?.classList.contains('active')) renderScoutNotes();
-    else renderScoutForm();
-    showToast('Refreshed');
-  });
   renderScoutForm();
 }
 
@@ -267,7 +257,7 @@ async function renderScoutNotes() {
     _loadRankings(),
   ]);
   if (!document.getElementById('scout-content')) return;  // navigated away
-  if (!notes.length){document.getElementById('scout-content').innerHTML='<div class="empty-state"><div class="empty-icon">◉</div><div>No scouting notes yet.</div></div>';return;}
+  if (!notes.length){document.getElementById('scout-content').innerHTML='<div class="empty-state"><div>No scouting notes yet.</div></div>';return;}
 
   // Group by team
   const byTeam={};
@@ -304,7 +294,7 @@ async function renderScoutNotes() {
               </div>
               ${noteHasSections(n) ? renderNoteSections(n) : '<span style="color:var(--text3);font-size:.8rem">—</span>'}
             </div>
-            <button class="btn btn-sm" style="color:var(--red);padding:0 .3rem;flex-shrink:0" data-del="${n.id}">✕</button>
+            <button class="btn btn-sm" style="color:var(--red);padding:0 .3rem;flex-shrink:0" data-del="${n.id}" title="Delete" aria-label="Delete">${uiIcon('trash-2')}</button>
           </div>`).join('')}
         <button class="btn btn-secondary btn-sm btn-block" style="margin-top:.5rem" onclick="openTeamModal(${team})">View Full Profile →</button>
       </div>`;

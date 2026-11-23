@@ -475,16 +475,12 @@ async function playoffs() {
     `).join('');
   } else {
     bodyHtml = `
-      <div class="empty-state"><div class="empty-icon">⬡</div><div>No playoff matches yet.</div>
+      <div class="empty-state"><div>No playoff matches yet.</div>
       <div style="margin-top:.5rem;font-size:.75rem">The bracket appears once alliance selection is done.</div></div>`;
   }
 
   renderPage(`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div class="page-title" style="margin-bottom:0">Playoffs</div>
-      <button class="icon-btn" onclick="playoffs()" title="Reload">↻</button>
-    </div>
-    <div style="font-size:.73rem;font-family:var(--mono);color:var(--text2);margin-bottom:.75rem">${escHtml(appSettings.active_event_name || '')} · ${alliances.length === 2 ? 'finals, best of 3' : 'double elimination'}</div>
+    <div style="font-size:.73rem;font-family:var(--mono);color:var(--text2);margin-bottom:.75rem">${alliances.length === 2 ? 'Best of 3' : 'Double elimination'}</div>
     ${allianceHtml}
     ${bodyHtml}
   `);

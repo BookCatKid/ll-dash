@@ -32,7 +32,7 @@ async function simulator() {
   });
 
   if (!rankings.length) {
-    renderPage('<div class="empty-state"><div class="empty-icon">▲</div><div>No rankings yet.<br><span style="font-size:.75rem">Appears after first matches are scored.</span></div></div>');
+    renderPage('<div class="empty-state"><div>No rankings yet.<br><span style="font-size:.75rem">Appears after first matches are scored.</span></div></div>');
     return;
   }
 
@@ -314,14 +314,14 @@ async function simulator() {
               <div class="sim-rp-num" style="color:var(--alliance-blue)">${blueVal}</div>
               <button class="sim-rp-btn sim-rp-plus" data-match="${m.matchNumber}" data-side="blue">+</button>
             </div>
-            ${!played ? `<button class="sim-auto-btn" data-auto="${m.matchNumber}" title="Fill with the OPR + bonus-rate estimate">✨ auto</button>` : ''}
+            ${!played ? `<button class="sim-auto-btn" data-auto="${m.matchNumber}" title="Fill with the OPR + bonus-rate estimate">Predict</button>` : ''}
           </div>
         </div>`;
     }).join('');
 
     document.getElementById('sim-tab-content').innerHTML = `
       <div class="sim-top-bar">
-        <button class="btn btn-sm btn-primary" id="sim-auto-all" style="flex:1">✨ Auto-Predict All</button>
+        <button class="btn btn-sm btn-primary" id="sim-auto-all" style="flex:1">Predict all</button>
         <button class="btn btn-sm btn-secondary" id="sim-reset-btn">Reset</button>
       </div>
       <div class="sim-rp-rules">RP = ${bonuses.map(b => b.label).join(' + ')} (+1 each) + 3 Win / 1 Tie · max 6<br>
@@ -437,10 +437,6 @@ async function simulator() {
   }
 
   renderPage(`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div class="page-title" style="margin-bottom:0">Sim<span>ulator</span></div>
-      <button class="icon-btn" onclick="simulator()" title="Reload">&#8635;</button>
-    </div>
     <div class="tabs" style="margin-bottom:.75rem">
       <button class="tab sim-tab active" data-simtab="sim-schedule">Schedule</button>
       <button class="tab sim-tab" data-simtab="sim-rankings">Rankings</button>

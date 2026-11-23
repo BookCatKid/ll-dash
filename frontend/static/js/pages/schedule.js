@@ -57,7 +57,7 @@ async function schedule() {
   window._oprMap = oprMap;  // shared with the match detail modal / other pages
 
   if (!matches.length) {
-    renderPage('<div class="empty-state"><div class="empty-icon">◷</div><div>No schedule yet.</div></div>');
+    renderPage('<div class="empty-state"><div>No schedule yet.</div></div>');
     return;
   }
 
@@ -66,10 +66,6 @@ async function schedule() {
   window._schedRankMap = rankMap;
 
   renderPage(`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">
-      <div class="page-title" style="margin-bottom:0">Schedule</div>
-      <button class="icon-btn" onclick="schedule()" title="Reload">↻</button>
-    </div>
     <div class="tabs" style="margin-bottom:.5rem">
       <button class="tab active" id="tab-all">All</button>
       <button class="tab" id="tab-ours">Ours</button>
@@ -219,13 +215,13 @@ function openMatchDetail(matchNumber) {
     const f = allianceRPFlags(a);
     const items = rankingPointBonuses().map(bonus => [bonus.label, f[bonus.key]]);
     const chips = items.map(([lbl, on]) =>
-      `<span style="background:${on?'var(--bg1)':'transparent'};color:${on?'var(--green)':'var(--text3)'};padding:1px 5px;border-radius:3px;font-size:.6rem;font-family:var(--mono);border:1px solid ${on?'var(--green)':'var(--border)'}">${on?'+1':'0'} ${lbl}</span>`
+      `<span style="background:${on?'var(--bg3)':'transparent'};color:${on?'var(--green)':'var(--text3)'};padding:1px 5px;border-radius:3px;font-size:.6rem;font-family:var(--mono);border:1px solid ${on?'var(--green)':'var(--border)'}">${on?'+1':'0'} ${lbl}</span>`
     ).join(' ');
     const winRP = isTie ? '+1 Tie' : isWinner ? '+3 Win' : '0 Loss';
     const winColor = isTie ? 'var(--yellow)' : isWinner ? 'var(--green)' : 'var(--text3)';
     return `<div style="display:flex;gap:.25rem;flex-wrap:wrap;margin-top:.35rem">
       ${chips}
-      <span style="background:${isWinner||isTie?'var(--bg1)':'transparent'};color:${winColor};padding:1px 5px;border-radius:3px;font-size:.6rem;font-family:var(--mono);border:1px solid ${winColor}">${winRP}</span>
+      <span style="background:${isWinner||isTie?'var(--bg3)':'transparent'};color:${winColor};padding:1px 5px;border-radius:3px;font-size:.6rem;font-family:var(--mono);border:1px solid ${winColor}">${winRP}</span>
     </div>`;
   };
 
@@ -258,7 +254,7 @@ function openMatchDetail(matchNumber) {
           <span class="modal-title">Q${m.matchNumber}</span>
           ${fieldNum?`<span style="font-size:.72rem;font-family:var(--mono);color:var(--text2);margin-left:.5rem">${fieldNum}</span>`:''}
         </div>
-        <button class="modal-close" id="md-close">✕</button>
+        <button class="modal-close" id="md-close" title="Close" aria-label="Close">${uiIcon('x')}</button>
       </div>
       <div class="modal-body">
         ${played ? `
