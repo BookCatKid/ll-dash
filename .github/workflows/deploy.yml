@@ -51,6 +51,6 @@ jobs:
           PA_TOKEN: ${{ secrets.PA_TOKEN }}
           PA_DOMAIN: ${{ secrets.PA_DOMAIN }}
         run: |
-          curl -sf -u "$PA_USERNAME:$PA_TOKEN" \
+          curl -sf -H "Authorization: Token $PA_TOKEN" \
             -X POST \
             "https://www.pythonanywhere.com/api/v0/user/$PA_USERNAME/webapps/$PA_DOMAIN/reload/"
