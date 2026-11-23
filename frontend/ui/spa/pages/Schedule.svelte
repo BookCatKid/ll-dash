@@ -3,6 +3,8 @@
   import { writable } from 'svelte/store';
   import { api } from '../lib/api.js';
   import { isOurMatch } from '../lib/helpers.js';
+  import { loadMatchData } from '../lib/match-data.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import MatchRow from '../components/MatchRow.svelte';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
 
@@ -10,7 +12,7 @@
   let loading = $state(true);
   let error = $state('');
   let matches = $state([]);
-  let oprs = $state({});
+  let metrics = $state({ scores: {}, oprs: {} });
   const filter = writable('all');
   let selected = $state('all');
   const teamNumber = $derived(Number(settings.team_number));
@@ -24,24 +26,31 @@
 
   onMount(() => {
     let active = true;
-    Promise.all([
-      api.schedule(),
-      api.ftcEventOprs(settings.active_event_code, settings.active_season),
-    ])
-      .then(([scheduleData, oprData]) => {
-        if (!active) return;
+    let request = 0;
+    const load = async () => {
+      const id = ++request;
+      try {
+        const [scheduleData, matchData] = await Promise.all([
+          api.schedule(),
+          loadMatchData(settings),
+        ]);
+        if (!active || id !== request) return;
         matches = scheduleData.schedule || [];
-        oprs = Object.fromEntries((oprData?.oprList || []).map((o) => [o.teamNumber, o]));
+        metrics = matchData;
+        error = '';
         loading = false;
-      })
-      .catch((e) => {
-        if (active) {
-          error = e.message;
+      } catch (reason) {
+        if (active && id === request) {
+          error = reason.message;
           loading = false;
         }
-      });
+      }
+    };
+    void load();
+    const unsubscribe = onPageRefresh(load);
     return () => {
       active = false;
+      unsubscribe();
     };
   });
 </script>
@@ -67,7 +76,7 @@
   />
   {#if displayed.length}
     {#each displayed as match (match.matchNumber)}
-      <MatchRow {match} {teamNumber} {onMatch} {onTeam} oprMap={oprs} />
+      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} season={settings.active_season} />
     {/each}
   {:else}
     <div class="empty-state">No matches.</div>

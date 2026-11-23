@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   let { settings, onTeam } = $props();
   let loading = $state(true),
     error = $state(''),
@@ -54,24 +55,28 @@
   });
   onMount(() => {
     let active = true;
-    Promise.all([api.awards(), api.rankings(), api.teams()])
-      .then(([data, ranks, teams]) => {
-        if (!active) return;
-        awards = data.awards || data.Awards || [];
-        names = Object.fromEntries([
-          ...(ranks.rankings || []).map((r) => [r.teamNumber, r.teamName]),
-          ...(teams.teams || []).map((t) => [t.teamNumber, t.nameShort]),
-        ]);
-        loading = false;
-      })
-      .catch((e) => {
-        if (active) {
-          error = e.message;
+    const reload = () =>
+      Promise.all([api.awards(), api.rankings(), api.teams()])
+        .then(([data, ranks, teams]) => {
+          if (!active) return;
+          awards = data.awards || data.Awards || [];
+          names = Object.fromEntries([
+            ...(ranks.rankings || []).map((r) => [r.teamNumber, r.teamName]),
+            ...(teams.teams || []).map((t) => [t.teamNumber, t.nameShort]),
+          ]);
           loading = false;
-        }
-      });
+        })
+        .catch((e) => {
+          if (active) {
+            error = e.message;
+            loading = false;
+          }
+        });
+    void reload();
+    const unsubscribe = onPageRefresh(reload);
     return () => {
       active = false;
+      unsubscribe();
     };
   });
 </script>

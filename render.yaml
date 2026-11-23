@@ -1,5 +1,7 @@
-# Render Blueprint — deploy this dashboard plus a free Postgres database
-# with one click: https://render.com/docs/blueprint-spec
+# Render preview deployment with a temporary free PostgreSQL instance.
+# Free PostgreSQL expires after 30 days. Do not use this blueprint to store
+# durable scouting notes without upgrading to persistent database hosting.
+# https://render.com/docs/free
 #
 # No team-specific configuration is needed here. On first visit the app
 # walks you through a setup wizard (team number, season, FTC API

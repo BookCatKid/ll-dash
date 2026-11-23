@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import { number } from '../lib/helpers.js';
   let { settings, onTeam } = $props();
   let loading = $state(true),
@@ -42,24 +43,28 @@
   }
   onMount(() => {
     let active = true;
-    Promise.all([
-      api.rankings(),
-      api.ftcEventOprs(settings.active_event_code, settings.active_season),
-    ])
-      .then(([r, o]) => {
-        if (!active) return;
-        ranks = r.rankings || r.Rankings || [];
-        oprs = o?.oprList || [];
-        loading = false;
-      })
-      .catch((e) => {
-        if (active) {
-          error = e.message;
+    const reload = () =>
+      Promise.all([
+        api.rankings(),
+        api.ftcEventOprs(settings.active_event_code, settings.active_season),
+      ])
+        .then(([r, o]) => {
+          if (!active) return;
+          ranks = r.rankings || r.Rankings || [];
+          oprs = o?.oprList || [];
           loading = false;
-        }
-      });
+        })
+        .catch((e) => {
+          if (active) {
+            error = e.message;
+            loading = false;
+          }
+        });
+    void reload();
+    const unsubscribe = onPageRefresh(reload);
     return () => {
       active = false;
+      unsubscribe();
     };
   });
 </script>

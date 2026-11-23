@@ -1,5 +1,5 @@
 <script>
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { writable } from 'svelte/store';
   import BottomNav from '../components/BottomNav.svelte';
   import Toast from '../components/Toast.svelte';
@@ -23,12 +23,12 @@
   import { api } from './lib/api.js';
   import { applyAppearance } from './lib/theme.js';
   import { visiblePages } from './lib/nav.js';
+  import { refreshPage } from './lib/refresh.js';
 
   let phase = $state('loading');
   /** @type {Record<string, any>} */
   let settings = $state({});
   let current = $state('dashboard');
-  let refreshCount = $state(0);
   let settingsOpen = $state(false);
   let selectedTeam = $state(null);
   let selectedMatch = $state(null);
@@ -92,7 +92,6 @@
   function navigate(page) {
     current = page;
     tabSelection.set(page);
-    refreshCount++;
     selectedTeam = null;
     selectedMatch = null;
   }
@@ -102,7 +101,7 @@
     applyAppearance(settings);
     tabItems.set(visiblePages(settings));
     if (!visiblePages(settings).some((item) => item.key === current)) navigate('dashboard');
-    refreshCount++;
+    else void tick().then(refreshPage);
   }
 
   async function logout() {
@@ -147,12 +146,7 @@
           </span>
         </div>
         <div class="topbar-right">
-          <button
-            class="icon-btn"
-            aria-label="Refresh page"
-            title="Refresh"
-            onclick={() => refreshCount++}
-          >
+          <button class="icon-btn" aria-label="Refresh page" title="Refresh" onclick={refreshPage}>
             <Icon name="refresh-cw" size={19} />
           </button>
           <button
@@ -170,7 +164,7 @@
       {#if !settings.active_event_code && current !== 'bigscreen'}
         <div class="empty-state">Choose an event in Settings.</div>
       {:else}
-        {#key `${current}-${refreshCount}`}
+        {#key current}
           {#if current === 'dashboard'}<Dashboard
               {settings}
               onMatch={openMatch}

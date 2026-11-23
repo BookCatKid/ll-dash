@@ -4,6 +4,7 @@
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import TeamChip from '../components/TeamChip.svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import { teamsFor, computeRp, oprPrediction } from '../lib/helpers.js';
 
   let { settings, notify, onTeam } = $props();
@@ -99,57 +100,67 @@
       loading = false;
       return;
     }
-    Promise.all([
-      api.rankings(),
-      api.schedule(),
-      api.ftcEventOprs(settings.active_event_code, season),
-      api.ftcEventScores(settings.active_event_code, season),
-    ])
-      .then(([r, s, o, sc]) => {
-        if (!active) return;
-        rankings = r.rankings || r.Rankings || [];
-        matches = s.schedule || [];
-        oprs = Object.fromEntries((o?.oprList || []).map((row) => [row.teamNumber, row]));
-        scores = Object.fromEntries(
-          (sc?.matches || []).map((m) => [m.matchNum, { red: m.red, blue: m.blue }]),
-        );
-        const initial = {};
-        for (const match of matches) {
-          if (match.scoreRedFinal == null) {
-            initial[match.matchNumber] = null;
-            continue;
+    const reload = () =>
+      Promise.all([
+        api.rankings(),
+        api.schedule(),
+        api.ftcEventOprs(settings.active_event_code, season),
+        api.ftcEventScores(settings.active_event_code, season),
+      ])
+        .then(([r, s, o, sc]) => {
+          if (!active) return;
+          rankings = r.rankings || r.Rankings || [];
+          matches = s.schedule || [];
+          oprs = Object.fromEntries((o?.oprList || []).map((row) => [row.teamNumber, row]));
+          scores = Object.fromEntries(
+            (sc?.matches || []).map((m) => [m.matchNum, { red: m.red, blue: m.blue }]),
+          );
+          const initial = {};
+          for (const match of matches) {
+            if (match.scoreRedFinal == null) {
+              initial[match.matchNumber] = null;
+              continue;
+            }
+            const data = scores[match.matchNumber],
+              tie = match.redWins === false && match.blueWins === false;
+            initial[match.matchNumber] = {
+              played: true,
+              red: data
+                ? computeRp(data.red, match.redWins, tie, season)
+                : match.redWins
+                  ? 3
+                  : tie
+                    ? 1
+                    : 0,
+              blue: data
+                ? computeRp(data.blue, match.blueWins, tie, season)
+                : match.blueWins
+                  ? 3
+                  : tie
+                    ? 1
+                    : 0,
+            };
           }
-          const data = scores[match.matchNumber],
-            tie = match.redWins === false && match.blueWins === false;
-          initial[match.matchNumber] = {
-            played: true,
-            red: data
-              ? computeRp(data.red, match.redWins, tie, season)
-              : match.redWins
-                ? 3
-                : tie
-                  ? 1
-                  : 0,
-            blue: data
-              ? computeRp(data.blue, match.blueWins, tie, season)
-              : match.blueWins
-                ? 3
-                : tie
-                  ? 1
-                  : 0,
-          };
-        }
-        sim = initial;
-        loading = false;
-      })
-      .catch((e) => {
-        if (active) {
-          notify(e.message);
+          const merged = { ...initial };
+          for (const match of matches) {
+            if (match.scoreRedFinal == null && sim[match.matchNumber] !== undefined) {
+              merged[match.matchNumber] = sim[match.matchNumber];
+            }
+          }
+          sim = merged;
           loading = false;
-        }
-      });
+        })
+        .catch((e) => {
+          if (active) {
+            notify(e.message);
+            loading = false;
+          }
+        });
+    void reload();
+    const unsubscribe = onPageRefresh(reload);
     return () => {
       active = false;
+      unsubscribe();
     };
   });
 

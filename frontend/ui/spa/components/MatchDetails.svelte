@@ -9,13 +9,23 @@
     robotStationRows,
     formatTime,
   } from '../lib/helpers.js';
+  import { matchOutcome, fieldLabel } from '../lib/match-data.js';
+  import MatchAlliances from './MatchAlliances.svelte';
   import TeamChip from './TeamChip.svelte';
 
   let { match, settings, onTeam } = $props();
-  let official = $state(null);
-  let scout = $state(null);
-  let oprs = $state({});
+  let fetchedOfficial = $state(null);
+  let fetchedScout = $state(null);
+  let fetchedOprs = $state(null);
   let ranks = $state({});
+  const hasPreloadedOfficial = $derived(
+    Number(settings.active_season) === 2026 && match.preloadedScore?.red?.autoPoints != null,
+  );
+  const official = $derived(
+    fetchedOfficial ?? (hasPreloadedOfficial ? match.preloadedScore : null),
+  );
+  const scout = $derived(fetchedScout ?? match.preloadedScore ?? null);
+  const oprs = $derived(fetchedOprs ?? match.preloadedOprs ?? {});
   const redTeams = $derived(teamsFor(match, 'Red'));
   const blueTeams = $derived(teamsFor(match, 'Blue'));
   const red = $derived(official?.red);
@@ -53,14 +63,32 @@
   );
   const scoutRedRP = $derived(computeRp(scout?.red, match.redWins, tie, season));
   const scoutBlueRP = $derived(computeRp(scout?.blue, match.blueWins, tie, season));
+  const outcome = $derived(matchOutcome(match, settings.team_number));
+  const displayedRedRP = $derived(redRP ?? scoutRedRP);
+  const displayedBlueRP = $derived(blueRP ?? scoutBlueRP);
+  const summary = $derived(
+    [
+      {
+        label: 'Auto',
+        red: red?.autoPoints ?? match.scoreRedAuto,
+        blue: blue?.autoPoints ?? match.scoreBlueAuto,
+      },
+      { label: 'TeleOp', red: red?.teleopPoints, blue: blue?.teleopPoints },
+      {
+        label: 'Foul pts',
+        red: blue?.foulPointsCommitted ?? match.scoreBlueFoul,
+        blue: red?.foulPointsCommitted ?? match.scoreRedFoul,
+      },
+      { label: 'RP', red: displayedRedRP, blue: displayedBlueRP },
+    ].filter((value) => value.red != null && value.blue != null),
+  );
   function bonusEarned(alliance, aliases) {
     return aliases.some((alias) => alliance?.[alias] === true);
   }
-  const metric = (label, key, points = false) => ({
+  const metric = (label, key) => ({
     label,
     red: red?.[key],
     blue: blue?.[key],
-    points,
   });
   const phases = $derived([
     {
@@ -148,22 +176,33 @@
   onMount(() => {
     let active = true;
     const season = Number(settings.active_season);
+    const hasPreloadedScout =
+      match.preloadedScore?.red != null && match.preloadedScore?.blue != null;
+    const hasPreloadedOprs = Object.keys(match.preloadedOprs ?? {}).length > 0;
     Promise.all([
-      season === 2026 ? api.matches().catch(() => null) : null,
-      api.ftcEventScores(settings.active_event_code, season).catch(() => null),
-      api.ftcEventOprs(settings.active_event_code, season).catch(() => null),
+      season === 2026 && !hasPreloadedOfficial ? api.matches().catch(() => null) : null,
+      !hasPreloadedScout
+        ? api.ftcEventScores(settings.active_event_code, season).catch(() => null)
+        : null,
+      !hasPreloadedOprs
+        ? api.ftcEventOprs(settings.active_event_code, season).catch(() => null)
+        : null,
       api.rankings().catch(() => null),
     ]).then(([scoreData, scoutData, oprData, rankData]) => {
       if (!active) return;
       const found = scoreData?.matchScores?.find((m) => m.matchNumber === match.matchNumber);
       if (found)
-        official = {
+        fetchedOfficial = {
           red: found.alliances?.find((a) => a.alliance === 'Red'),
           blue: found.alliances?.find((a) => a.alliance === 'Blue'),
         };
       const matchScore = scoutData?.matches?.find((m) => m.matchNum === match.matchNumber);
-      if (matchScore) scout = matchScore;
-      oprs = Object.fromEntries((oprData?.oprList || []).map((entry) => [entry.teamNumber, entry]));
+      if (matchScore) fetchedScout = matchScore;
+      if (oprData) {
+        fetchedOprs = Object.fromEntries(
+          (oprData.oprList || []).map((entry) => [entry.teamNumber, entry]),
+        );
+      }
       ranks = Object.fromEntries(
         (rankData?.rankings || rankData?.Rankings || []).map((entry) => [entry.teamNumber, entry]),
       );
@@ -174,70 +213,65 @@
   });
 </script>
 
-<div class="match-scoring">
-  <div class="match-scoring-columns"><span></span><strong>Red</strong><strong>Blue</strong></div>
-  <div class="match-scoring-row final">
-    <span class="match-scoring-label">Final</span><strong class="match-scoring-red">
-      {scoreValue(match.scoreRedFinal)}
-    </strong><strong class="match-scoring-blue">{scoreValue(match.scoreBlueFinal)}</strong>
-  </div>
-  <div class="match-scoring-row">
-    <span class="match-scoring-label">Teams</span>
-    <span
-      class="match-scoring-red"
-      style="display:flex;flex-wrap:wrap;gap:.15rem;justify-content:flex-end"
+<div class="match-detail">
+  {#if outcome}
+    <div
+      class="match-detail-result"
+      class:won={outcome === 'win'}
+      class:lost={outcome === 'loss'}
+      class:tied={outcome === 'tie'}
     >
-      {#each redTeams as team}<TeamChip
-          {team}
-          alliance="red"
-          ourTeam={settings.team_number}
-          onOpen={onTeam}
-        />{/each}
-    </span>
-    <span
-      class="match-scoring-blue"
-      style="display:flex;flex-wrap:wrap;gap:.15rem;justify-content:flex-end"
-    >
-      {#each blueTeams as team}<TeamChip
-          {team}
-          alliance="blue"
-          ourTeam={settings.team_number}
-          onOpen={onTeam}
-        />{/each}
-    </span>
-  </div>
-  {#if prediction.hasData}
-    <div class="match-scoring-row">
-      <span class="match-scoring-label">OPR</span><span class="match-scoring-red">
-        {number(prediction.red)}
-      </span><span class="match-scoring-blue">{number(prediction.blue)}</span>
-    </div>
-    <div class="match-scoring-row">
-      <span class="match-scoring-label">Favored</span><span class="match-scoring-red">
-        {prediction.winner === 'Red' ? `${prediction.confidence}%` : '–'}
-      </span><span class="match-scoring-blue">
-        {prediction.winner === 'Blue' ? `${prediction.confidence}%` : '–'}
-      </span>
+      {outcome === 'win' ? 'Win' : outcome === 'loss' ? 'Loss' : 'Tie'}
     </div>
   {/if}
+  <MatchAlliances {match} teamNumber={settings.team_number} {onTeam} {ranks} />
+
+  {#if match.scoreRedFinal == null}
+    <div class="match-detail-scheduled">
+      {formatTime(match.startTime)}{fieldLabel(match.field) ? ` · ${fieldLabel(match.field)}` : ''}
+    </div>
+  {:else if summary.length}
+    <div class="match-detail-summary">
+      {#each summary as item (item.label)}
+        <div class="match-detail-stat">
+          <span class="match-detail-stat-label">{item.label}</span>
+          <span class="match-detail-stat-values">
+            <strong class="match-scoring-red">{item.red}</strong><span>:</span><strong
+              class="match-scoring-blue"
+            >
+              {item.blue}
+            </strong>
+          </span>
+        </div>
+      {/each}
+    </div>
+  {/if}
+
   {#if red && blue && red.autoPoints != null}
     {#each phases as phase (phase.name)}
-      <section class="match-scoring-group">
-        <h3 class="match-scoring-group-title">{phase.name}</h3>
-        {#each phase.rows as item (item.label)}
-          <div
-            class="match-scoring-row"
-            class:total={item.label.includes('total') || item.label === 'Total RP'}
-            class:final={item.label === 'Final score'}
-          >
-            <span class="match-scoring-label">{item.label}</span><span class="match-scoring-red">
-              {scoreValue(item.red)}
-            </span><span class="match-scoring-blue">{scoreValue(item.blue)}</span>
+      <details class="match-detail-expand">
+        <summary>
+          {phase.name === 'Score' ? 'Score calculation' : `${phase.name} breakdown`}
+        </summary>
+        <div class="match-detail-table">
+          <div class="match-scoring-columns">
+            <span></span><strong>Red</strong><strong>Blue</strong>
           </div>
-        {/each}
-      </section>
+          {#each phase.rows as item (item.label)}
+            <div
+              class="match-scoring-row"
+              class:total={item.label.includes('total') || item.label === 'Total RP'}
+              class:final={item.label === 'Final score'}
+            >
+              <span class="match-scoring-label">{item.label}</span><span class="match-scoring-red">
+                {scoreValue(item.red)}
+              </span><span class="match-scoring-blue">{scoreValue(item.blue)}</span>
+            </div>
+          {/each}
+        </div>
+      </details>
     {/each}
-    <details class="match-scoring-expand">
+    <details class="match-detail-expand">
       <summary>Robot actions</summary>
       <div class="match-scoring-expand-body">
         <table class="match-scoring-robot-table">
@@ -250,14 +284,17 @@
               <tr class="match-scoring-robot-row" data-station={row.station}>
                 <th scope="row">
                   <div class="match-scoring-robot-identity">
-                    {#if row.team}<TeamChip
+                    {#if row.team}
+                      <TeamChip
                         team={row.team}
                         alliance={row.side.toLowerCase()}
                         ourTeam={settings.team_number}
                         onOpen={onTeam}
-                      />{#if row.team.teamName}<span class="match-scoring-robot-name">
+                      />
+                      {#if row.team.teamName}<span class="match-scoring-robot-name">
                           {row.team.teamName}
-                        </span>{/if}{:else}Team unavailable{/if}
+                        </span>{/if}
+                    {:else}Team unavailable{/if}
                   </div>
                 </th>
                 {#each [row.leftWall, row.autoPark, row.teleopPark] as result}
@@ -273,9 +310,12 @@
         </table>
       </div>
     </details>
-    <details class="match-scoring-expand">
-      <summary>Field and fouls</summary>
-      <div class="match-scoring-expand-body">
+    <details class="match-detail-expand">
+      <summary>Hive and fouls</summary>
+      <div class="match-detail-table">
+        <div class="match-scoring-columns">
+          <span></span><strong>Red</strong><strong>Blue</strong>
+        </div>
         {#each fields as item (item.label)}
           <div class="match-scoring-row">
             <span class="match-scoring-label">{item.label}</span><span class="match-scoring-red">
@@ -285,147 +325,109 @@
         {/each}
       </div>
     </details>
-    <details class="match-scoring-expand">
+    <details class="match-detail-expand">
       <summary>Flower contents</summary>
-      <div class="match-scoring-expand-body match-scoring-flower-list">
+      <div class="match-scoring-flower-list">
         {#each flowers as flower (flower.key)}
           <div class="match-scoring-flower">
             <div class="match-scoring-flower-heading"><strong>{flower.label}</strong></div>
             <div class="match-scoring-flower-pieces">
               {#if !red?.[flower.key]?.length}<span class="match-scoring-empty">Empty</span>
-              {:else}{#each red[flower.key] as piece, index}<span
+              {:else}
+                {#each red[flower.key] as piece, index}
+                  <span
                     class="match-scoring-piece"
                     class:red={piece === 'RED_NECTAR'}
                     class:blue={piece === 'BLUE_NECTAR'}
                     class:pollen={piece === 'POLLEN'}
                   >
                     {pieceLabels[piece] || piece}{index < red[flower.key].length - 1 ? ', ' : ''}
-                  </span>{/each}{/if}
+                  </span>
+                {/each}
+              {/if}
             </div>
           </div>
         {/each}
       </div>
     </details>
-  {:else if scout?.red?.autoHivePoints != null}
-    <section class="match-scoring-group">
-      <h3 class="match-scoring-group-title">Scoring</h3>
-      {#each [['Auto hive', 'autoHivePoints'], ['TeleOp hive', 'dcHivePoints'], ['Flower', 'dcFlowerPoints'], ['Garden', 'dcGardenPoints'], ['TeleOp park', 'dcParkPoints']] as [label, key]}
-        <div class="match-scoring-row">
-          <span class="match-scoring-label">{label}</span><span class="match-scoring-red">
-            {scout.red[key] || 0}
-          </span><span class="match-scoring-blue">{scout.blue[key] || 0}</span>
-        </div>
-      {/each}
-    </section>
-  {/if}
-  {#if scout?.red && scout?.blue && !(red && blue && red.autoPoints != null)}
-    {#if bonusFields.length}
-      <section class="match-scoring-group">
-        <h3 class="match-scoring-group-title">Ranking points</h3>
-        <div class="match-scoring-row">
-          <span class="match-scoring-label">Win / tie</span><span class="match-scoring-red">
-            {match.redWins ? 3 : tie ? 1 : 0}
-          </span><span class="match-scoring-blue">{match.blueWins ? 3 : tie ? 1 : 0}</span>
-        </div>
-        {#each bonusFields as bonus (bonus.label)}
-          <div class="match-scoring-row">
-            <span class="match-scoring-label">{bonus.label}</span><span class="match-scoring-red">
-              {bonusEarned(scout.red, bonus.aliases) ? 1 : 0}
-            </span><span class="match-scoring-blue">
-              {bonusEarned(scout.blue, bonus.aliases) ? 1 : 0}
-            </span>
+  {:else if scout?.red && scout?.blue}
+    {#if scout.red.autoHivePoints != null}
+      <details class="match-detail-expand">
+        <summary>Scoring breakdown</summary>
+        <div class="match-detail-table">
+          <div class="match-scoring-columns">
+            <span></span><strong>Red</strong><strong>Blue</strong>
           </div>
-        {/each}
-        <div class="match-scoring-row total">
-          <span class="match-scoring-label">Total RP</span><strong class="match-scoring-red">
-            {scoutRedRP}
-          </strong><strong class="match-scoring-blue">{scoutBlueRP}</strong>
+          {#each [['Auto hive', 'autoHivePoints'], ['TeleOp hive', 'dcHivePoints'], ['Flower', 'dcFlowerPoints'], ['Garden', 'dcGardenPoints'], ['TeleOp park', 'dcParkPoints']] as [label, key]}
+            <div class="match-scoring-row">
+              <span class="match-scoring-label">{label}</span><span class="match-scoring-red">
+                {scoreValue(scout.red[key])}
+              </span><span class="match-scoring-blue">{scoreValue(scout.blue[key])}</span>
+            </div>
+          {/each}
         </div>
-      </section>
+      </details>
+    {/if}
+    {#if bonusFields.length}
+      <details class="match-detail-expand">
+        <summary>Ranking points breakdown</summary>
+        <div class="match-detail-table">
+          <div class="match-scoring-columns">
+            <span></span><strong>Red</strong><strong>Blue</strong>
+          </div>
+          <div class="match-scoring-row">
+            <span class="match-scoring-label">Win / tie</span><span class="match-scoring-red">
+              {match.redWins ? 3 : tie ? 1 : 0}
+            </span><span class="match-scoring-blue">{match.blueWins ? 3 : tie ? 1 : 0}</span>
+          </div>
+          {#each bonusFields as bonus (bonus.label)}
+            <div class="match-scoring-row">
+              <span class="match-scoring-label">{bonus.label}</span><span class="match-scoring-red">
+                {bonusEarned(scout.red, bonus.aliases) ? 1 : 0}
+              </span><span class="match-scoring-blue">
+                {bonusEarned(scout.blue, bonus.aliases) ? 1 : 0}
+              </span>
+            </div>
+          {/each}
+          <div class="match-scoring-row total">
+            <span class="match-scoring-label">Total RP</span><span class="match-scoring-red">
+              {scoreValue(scoutRedRP)}
+            </span><span class="match-scoring-blue">{scoreValue(scoutBlueRP)}</span>
+          </div>
+        </div>
+      </details>
     {/if}
   {/if}
-  <section style="margin-top:1rem">
-    {#each [{ side: 'Red', members: redTeams }, { side: 'Blue', members: blueTeams }] as alliance (alliance.side)}
-      <div
-        class="section-label"
-        style:color={alliance.side === 'Red' ? 'var(--alliance-red)' : 'var(--alliance-blue)'}
-      >
-        {alliance.side} alliance
-      </div>
-      {#each alliance.members as team (team.station)}
-        {@const ranking = ranks[team.teamNumber]}
-        <div class="md-team-row">
-          <TeamChip
-            {team}
-            alliance={alliance.side.toLowerCase()}
-            ourTeam={settings.team_number}
-            onOpen={onTeam}
-          />
-          <button class="md-team-detail" type="button" onclick={() => onTeam(team.teamNumber)}>
-            <strong>{team.teamName || team.teamNumber}</strong>
-            <span>
-              {team.station}{team.surrogate ? ' · Surrogate' : ''}{team.dq ? ' · DQ' : ''}
-            </span>
-          </button>
-          {#if ranking}
-            <span class="md-team-ranking">
-              #{ranking.rank}<span>{ranking.wins}W–{ranking.losses}L</span><span>
-                RP {ranking.sortOrder1?.toFixed(3) ?? '–'}
-              </span>
-            </span>
-          {/if}
-        </div>
-      {/each}
-    {/each}
-  </section>
+
   {#if settings.advanced_predictions !== false && prediction.hasData}
-    <section class="match-scoring-group" style="margin-top:1rem">
-      <h3 class="match-scoring-group-title">
-        OPR favoring{match.scoreRedFinal == null && prediction.winner !== 'Tie'
-          ? ` · ${prediction.winner} favored ${prediction.confidence}%`
+    <details class="match-detail-expand" open={match.scoreRedFinal == null}>
+      <summary>
+        OPR prediction{match.scoreRedFinal == null
+          ? ` · ${prediction.winner === 'Tie' ? 'Toss-up' : `${prediction.winner} favored ${prediction.confidence}%`}`
           : ''}
-      </h3>
-      {#each [{ key: 'auto', label: 'Auto' }, { key: 'teleop', label: 'TeleOp' }, { key: 'endgame', label: 'Endgame' }, { key: 'total', label: 'Total' }] as phase (phase.key)}
-        <div class="match-scoring-row" class:total={phase.key === 'total'}>
-          <span class="match-scoring-label">{phase.label}</span><span class="match-scoring-red">
-            {number(prediction.comp[phase.key][0])}
-          </span><span class="match-scoring-blue">{number(prediction.comp[phase.key][1])}</span>
+      </summary>
+      <div class="match-detail-table">
+        <div class="match-scoring-columns">
+          <span></span><strong>Red</strong><strong>Blue</strong>
         </div>
-      {/each}
-      <div style="color:var(--text3);font-size:.7rem;margin-top:.35rem">
-        Alliance sums of FTCScout season npOPR by phase
+        {#each [{ key: 'auto', label: 'Auto' }, { key: 'teleop', label: 'TeleOp' }, { key: 'endgame', label: 'Endgame' }, { key: 'total', label: 'Total' }] as phase (phase.key)}
+          <div class="match-scoring-row" class:total={phase.key === 'total'}>
+            <span class="match-scoring-label">{phase.label}</span><span class="match-scoring-red">
+              {number(prediction.comp[phase.key][0])}
+            </span><span class="match-scoring-blue">{number(prediction.comp[phase.key][1])}</span>
+          </div>
+        {/each}
       </div>
-    </section>
-  {/if}
-  {#if match.scoreRedFinal == null}
-    <div class="setting-hint">
-      Scheduled: {formatTime(match.startTime)}{match.series != null
-        ? ` · Field ${match.series + 1}`
-        : ''}
-    </div>
-  {:else if match.scoreRedAuto != null || match.scoreBlueAuto != null}
-    <div class="match-scoring-row" style="margin-top:.6rem">
-      <span class="match-scoring-label">Auto</span><span class="match-scoring-red">
-        {scoreValue(match.scoreRedAuto)}
-      </span><span class="match-scoring-blue">{scoreValue(match.scoreBlueAuto)}</span>
-    </div>
-    {#if match.scoreRedFoul != null || match.scoreBlueFoul != null}<div class="match-scoring-row">
-        <span class="match-scoring-label">Foul points committed</span><span
-          class="match-scoring-red"
-        >
-          {scoreValue(match.scoreRedFoul)}
-        </span><span class="match-scoring-blue">{scoreValue(match.scoreBlueFoul)}</span>
-      </div>{/if}
+    </details>
   {/if}
   {#if match.actualStartTime}
-    <div style="color:var(--text3);font-size:.7rem;margin-top:.5rem">
-      Started: {formatTime(match.actualStartTime)}{match.postResultTime
-        ? ` · Posted: ${formatTime(match.postResultTime)}`
+    <div class="match-detail-time">
+      Started {formatTime(match.actualStartTime)}{match.postResultTime
+        ? ` · Posted ${formatTime(match.postResultTime)}`
         : ''}
     </div>
   {/if}
-  {#if videoUrl}
-    <a
+  {#if videoUrl}<a
       class="btn btn-secondary btn-sm"
       href={videoUrl}
       target="_blank"
@@ -433,6 +435,5 @@
       style="margin-top:.75rem"
     >
       Watch match video
-    </a>
-  {/if}
+    </a>{/if}
 </div>

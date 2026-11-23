@@ -41,26 +41,23 @@ scouting workflow**. No code changes required.
 
 ## Stack
 
-Flask + PostgreSQL backend, Svelte 5 frontend compiled with Vite. The generated bundle is checked in; production only needs Python.
+Flask + SQLAlchemy (PostgreSQL or SQLite) backend, Svelte 5 frontend compiled with Vite. The generated bundle is checked in; production only needs Python.
 
-## Deploy to Render (recommended)
+## Hosting and storage
 
-1. Fork/clone this repo to your GitHub account.
-2. In [Render](https://render.com), click **New → Blueprint** and point it at
-   your repo. The included [`render.yaml`](render.yaml) provisions the web
-   service and a free Postgres database automatically.
-3. Open your service URL. The **setup wizard** appears on first visit:
-   - Enter your FTC Events API username/key
-     (request free credentials [here](https://ftc-events.firstinspires.org/services/API) —
-     they arrive by email within minutes).
-   - Enter your team number, season and a 4-digit PIN for your team.
-   - Pick a dashboard name (e.g. `XX Dash` or anything you like) and your
-     team colors.
-4. Done. Share the URL + PIN with your team; on phones use
-   "Add to Home Screen" to install it as an app.
+Live schedules, rankings, scores, awards, team details, and OPR come from FIRST Events and FTCScout. They do not need a database. Persistent storage is only used for shared team data:
 
-Any other host that runs `gunicorn "app:create_app()"` against a Postgres
-database works the same way (Railway, Fly.io, a VPS, …).
+- Setup, FTC API credentials, PIN, theme, and navigation settings.
+- Scouting notes and alliance-pick flags shared across devices.
+- Hub notes and custom checklists.
+
+Individual checklist completion and per-device tab visibility already use browser storage.
+
+**A separate PostgreSQL service is not required.** The existing SQLAlchemy backend can use a SQLite file on a persistent disk. A VM or other always-on host with persistent storage is a straightforward option for a team that wants a private, shared dashboard. Back up the SQLite file regularly.
+
+The included [`render.yaml`](render.yaml) is suitable for temporary evaluation, not permanent free hosting. [Render's free PostgreSQL expires after 30 days](https://render.com/docs/free), and free web service filesystems are ephemeral. Do not rely on either for durable scouting data. A paid persistent database or a host with a persistent disk is required to retain shared information reliably.
+
+To deploy, set a strong `SECRET_KEY` and point `DATABASE_URL` at your persistent SQLite file or PostgreSQL instance. Start the app with `gunicorn "app:create_app()" --bind 0.0.0.0:$PORT` or a comparable process manager. On first visit the setup wizard requests your FTC Events API credentials, team number, and PIN.
 
 ## Run locally
 
@@ -70,8 +67,9 @@ cd ll-dash
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-createdb lldash                      # Postgres must be running
 cp .env.example .env                 # set SECRET_KEY and DATABASE_URL
+# SQLite works without a separate PostgreSQL service.
+# Point DATABASE_URL at a writable, persistent SQLite file.
 
 python app.py                        # http://127.0.0.1:5000
 ```
@@ -96,8 +94,8 @@ npm test
 
 ## Database setup & migrations
 
-Tables are created automatically on first boot (`db.create_all()`), so a
-fresh, empty Postgres database is all you need. When upgrading an existing
+Tables are created automatically on first boot (`db.create_all()`) in either
+SQLite or PostgreSQL. When upgrading an existing
 deployment, lightweight column migrations also run automatically at startup —
 no manual steps.
 

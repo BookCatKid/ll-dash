@@ -3,6 +3,7 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import { number } from '../lib/helpers.js';
 
   let { settings, notify, onTeam } = $props();
@@ -33,30 +34,34 @@
   }
   onMount(() => {
     let mounted = true;
-    Promise.all([
-      api.rankings(),
-      api.flags(),
-      api.flagCategories(),
-      api.scouting(),
-      api.ftcEventOprs(settings.active_event_code, settings.active_season),
-    ])
-      .then(([rankData, flagData, cats, scoutData, oprData]) => {
-        if (!mounted) return;
-        ranks = rankData.rankings || rankData.Rankings || [];
-        flags = flagData || {};
-        categories = cats || [];
-        notes = scoutData || [];
-        oprs = Object.fromEntries((oprData?.oprList || []).map((t) => [t.teamNumber, t]));
-        loading = false;
-      })
-      .catch((e) => {
-        if (mounted) {
+    const reload = () =>
+      Promise.all([
+        api.rankings(),
+        api.flags(),
+        api.flagCategories(),
+        api.scouting(),
+        api.ftcEventOprs(settings.active_event_code, settings.active_season),
+      ])
+        .then(([rankData, flagData, cats, scoutData, oprData]) => {
+          if (!mounted) return;
+          ranks = rankData.rankings || rankData.Rankings || [];
+          flags = flagData || {};
+          categories = cats || [];
+          notes = scoutData || [];
+          oprs = Object.fromEntries((oprData?.oprList || []).map((t) => [t.teamNumber, t]));
           loading = false;
-          notify(e.message);
-        }
-      });
+        })
+        .catch((e) => {
+          if (mounted) {
+            loading = false;
+            notify(e.message);
+          }
+        });
+    void reload();
+    const unsubscribe = onPageRefresh(reload);
     return () => {
       mounted = false;
+      unsubscribe();
     };
   });
   async function toggleFlag(team, category) {

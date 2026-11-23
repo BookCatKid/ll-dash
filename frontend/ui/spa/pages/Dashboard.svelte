@@ -4,12 +4,15 @@
   import MatchRow from '../components/MatchRow.svelte';
   import TeamChip from '../components/TeamChip.svelte';
   import { isOurMatch, allianceFor, formatTime } from '../lib/helpers.js';
+  import { loadMatchData } from '../lib/match-data.js';
+  import { onPageRefresh } from '../lib/refresh.js';
 
   let { settings, onMatch, onTeam, onNavigate } = $props();
   let loading = $state(true);
   let error = $state('');
   let ranks = $state([]);
   let matches = $state([]);
+  let metrics = $state({ scores: {}, oprs: {} });
   let remaining = $state('');
   const teamNumber = $derived(Number(settings.team_number));
   const ourMatches = $derived(matches.filter((match) => isOurMatch(match, teamNumber)));
@@ -29,33 +32,44 @@
 
   onMount(() => {
     let active = true;
-    let timer;
-    Promise.all([api.rankings(), api.schedule()])
-      .then(([rankData, scheduleData]) => {
-        if (!active) return;
+    let request = 0;
+    const updateCountdown = () => {
+      if (!next?.startTime) {
+        remaining = '';
+        return;
+      }
+      const seconds = Math.max(0, Math.floor((Date.parse(next.startTime) - Date.now()) / 1000));
+      remaining = `${Math.floor(seconds / 3600)}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+    };
+    const load = async () => {
+      const id = ++request;
+      try {
+        const [rankData, scheduleData, matchData] = await Promise.all([
+          api.rankings(),
+          api.schedule(),
+          loadMatchData(settings),
+        ]);
+        if (!active || id !== request) return;
         ranks = rankData.rankings || rankData.Rankings || [];
         matches = scheduleData.schedule || [];
+        metrics = matchData;
+        error = '';
         loading = false;
-        const update = () => {
-          if (!next?.startTime) {
-            remaining = '';
-            return;
-          }
-          const seconds = Math.max(0, Math.floor((Date.parse(next.startTime) - Date.now()) / 1000));
-          remaining = `${Math.floor(seconds / 3600)}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-        };
-        update();
-        timer = setInterval(update, 1000);
-      })
-      .catch((e) => {
-        if (active) {
-          error = e.message;
+        updateCountdown();
+      } catch (reason) {
+        if (active && id === request) {
+          error = reason.message;
           loading = false;
         }
-      });
+      }
+    };
+    void load();
+    const timer = setInterval(updateCountdown, 1000);
+    const unsubscribe = onPageRefresh(load);
     return () => {
       active = false;
       clearInterval(timer);
+      unsubscribe();
     };
   });
 </script>
@@ -68,29 +82,34 @@
   <div class="svelte-error">{error}</div>
 {:else}
   {#if next}
-    <div class="card card-accent">
-      <div class="card-header">
-        <span class="card-title">Next: Q{next.matchNumber}</span><span class="match-time">
-          {formatTime(next.startTime)}
-        </span>
-      </div>
-      {#if remaining}<div class="countdown-block">
-          <div class="countdown-time">{remaining}</div>
-        </div>{/if}
-      <MatchRow match={next} {teamNumber} {onMatch} {onTeam} />
+    <div class="card-header dashboard-match-heading">
+      <span class="card-title">Next match</span>
+      <time class="match-time">{formatTime(next.startTime)}</time>
     </div>
+    {#if remaining}<div class="countdown-block">
+        <div class="countdown-time">{remaining}</div>
+      </div>{/if}
+    <MatchRow
+      match={next}
+      {teamNumber}
+      {onMatch}
+      {onTeam}
+      {metrics}
+      season={settings.active_season}
+    />
   {/if}
   {#if last}
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Last match: Q{last.matchNumber}</span><span
-          style:color={won(last) ? 'var(--green)' : 'var(--red)'}
-        >
-          {won(last) ? 'Win' : last.scoreRedFinal === last.scoreBlueFinal ? 'Tie' : 'Loss'}
-        </span>
-      </div>
-      <MatchRow match={last} {teamNumber} {onMatch} {onTeam} />
+    <div class="card-header dashboard-match-heading">
+      <span class="card-title">Last match</span>
     </div>
+    <MatchRow
+      match={last}
+      {teamNumber}
+      {onMatch}
+      {onTeam}
+      {metrics}
+      season={settings.active_season}
+    />
   {/if}
   {#if rank}
     <div class="card">
@@ -139,7 +158,7 @@
       </button>
     </div>
     {#each [...played].slice(-5).reverse() as match (match.matchNumber)}
-      <MatchRow {match} {teamNumber} {onMatch} {onTeam} />
+      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} season={settings.active_season} />
     {/each}
   {/if}
   <div class="card-header" style="margin-top:1.25rem">

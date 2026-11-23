@@ -3,6 +3,7 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import Icon from '../components/Icon.svelte';
 
   let { notify } = $props();
@@ -74,22 +75,26 @@
     } catch {
       /* storage */
     }
-    Promise.all([api.notes(), api.checklists()])
-      .then(([n, c]) => {
-        if (active) {
-          notes = n || [];
-          checklists = c || [];
-          loading = false;
-        }
-      })
-      .catch((e) => {
-        if (active) {
-          notify(e.message);
-          loading = false;
-        }
-      });
+    const reload = () =>
+      Promise.all([api.notes(), api.checklists()])
+        .then(([n, c]) => {
+          if (active) {
+            notes = n || [];
+            checklists = c || [];
+            loading = false;
+          }
+        })
+        .catch((e) => {
+          if (active) {
+            notify(e.message);
+            loading = false;
+          }
+        });
+    void reload();
+    const unsubscribe = onPageRefresh(reload);
     return () => {
       active = false;
+      unsubscribe();
     };
   });
   async function reloadNotes() {
@@ -139,11 +144,12 @@
     }
   }
   function savedItems(id) {
-    if (checked[id]) return checked[id];
+    if (checked[id] !== undefined) return checked[id];
     try {
-      return (checked[id] = JSON.parse(localStorage.getItem(`cl_${id}`) || '[]'));
+      const stored = JSON.parse(localStorage.getItem(`cl_${id}`) || '[]');
+      return Array.isArray(stored) ? stored : [];
     } catch {
-      return (checked[id] = []);
+      return [];
     }
   }
   function toggleItem(id, index) {

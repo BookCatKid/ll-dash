@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import { groupPlayoffRounds, resolveBracket } from '../lib/playoffs.js';
   import { teamsFor, isOurMatch } from '../lib/helpers.js';
   import MatchRow from '../components/MatchRow.svelte';
@@ -20,21 +21,25 @@
   const matchFor = (slot) => slot.match?.m;
   onMount(() => {
     let active = true;
-    Promise.all([api.playoffSchedule(), api.alliances()])
-      .then(([result, allianceData]) => {
-        if (!active) return;
-        matches = result.schedule || [];
-        alliances = allianceData.alliances || allianceData.Alliances || [];
-        loading = false;
-      })
-      .catch((e) => {
-        if (active) {
-          error = e.message;
+    const reload = () =>
+      Promise.all([api.playoffSchedule(), api.alliances()])
+        .then(([result, allianceData]) => {
+          if (!active) return;
+          matches = result.schedule || [];
+          alliances = allianceData.alliances || allianceData.Alliances || [];
           loading = false;
-        }
-      });
+        })
+        .catch((e) => {
+          if (active) {
+            error = e.message;
+            loading = false;
+          }
+        });
+    void reload();
+    const unsubscribe = onPageRefresh(reload);
     return () => {
       active = false;
+      unsubscribe();
     };
   });
 </script>

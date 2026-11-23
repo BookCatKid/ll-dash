@@ -3,6 +3,7 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import Icon from '../components/Icon.svelte';
   import { formatTime } from '../lib/helpers.js';
   let { settings, notify, onTeam, initialTeam = null } = $props();
@@ -83,23 +84,27 @@
     } catch {
       /* disabled storage */
     }
-    Promise.all([api.rankings(), api.schedule(), api.scoutingFields(), api.flagCategories()])
-      .then(([rankData, schedData, scoutFields, cats]) => {
-        if (!active) return;
-        ranks = rankData.rankings || rankData.Rankings || [];
-        schedule = schedData.schedule || [];
-        fields = scoutFields || [];
-        flags = cats || [];
-        loading = false;
-      })
-      .catch((e) => {
-        if (active) {
-          notify(e.message);
+    const reload = () =>
+      Promise.all([api.rankings(), api.schedule(), api.scoutingFields(), api.flagCategories()])
+        .then(([rankData, schedData, scoutFields, cats]) => {
+          if (!active) return;
+          ranks = rankData.rankings || rankData.Rankings || [];
+          schedule = schedData.schedule || [];
+          fields = scoutFields || [];
+          flags = cats || [];
           loading = false;
-        }
-      });
+        })
+        .catch((e) => {
+          if (active) {
+            notify(e.message);
+            loading = false;
+          }
+        });
+    void reload();
+    const unsubscribe = onPageRefresh(reload);
     return () => {
       active = false;
+      unsubscribe();
     };
   });
   async function save() {

@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
+  import { onPageRefresh } from '../lib/refresh.js';
   import { formatTime, teamsFor, isOurMatch } from '../lib/helpers.js';
   import Icon from '../components/Icon.svelte';
   let { settings, onExit } = $props();
@@ -58,6 +59,7 @@
       }
     };
     void load();
+    const unsubscribe = onPageRefresh(load);
     const refresh = setInterval(load, Math.max(10, config.refresh_seconds || 45) * 1000);
     const tick = setInterval(() => (clock = new Date()), 1000);
     const step = setInterval(
@@ -68,6 +70,7 @@
     );
     return () => {
       active = false;
+      unsubscribe();
       clearInterval(refresh);
       clearInterval(tick);
       clearInterval(step);

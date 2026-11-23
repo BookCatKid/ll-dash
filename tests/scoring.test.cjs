@@ -107,3 +107,84 @@ test('OPR phase components preserve the legacy prediction breakdown', async () =
   assert.equal(result.blueOPR, 10);
   assert.equal(result.redWinProb, 0.5 + 10 / (30 * 0.4) / 2);
 });
+
+test('win and loss labels are only assigned to our completed matches', async () => {
+  const { matchOutcome } = await import('../frontend/ui/spa/lib/match-data.js');
+  const match = {
+    teams: [
+      { station: 'Red1', teamNumber: 3650 },
+      { station: 'Blue1', teamNumber: 6016 },
+    ],
+    scoreRedFinal: 28,
+    scoreBlueFinal: 32,
+    redWins: false,
+    blueWins: true,
+  };
+  assert.equal(matchOutcome(match, 3650), 'loss');
+  assert.equal(matchOutcome(match, 6016), 'win');
+  assert.equal(matchOutcome(match, 12345), null);
+  assert.equal(
+    matchOutcome({ ...match, scoreBlueFinal: 28, redWins: false, blueWins: false }, 3650),
+    'tie',
+  );
+  assert.equal(matchOutcome({ ...match, scoreBlueFinal: null }, 3650), null);
+});
+
+test('official 2026 scoring exposes earned ranking points and hive tips', async () => {
+  const { matchMetrics } = await import('../frontend/ui/spa/lib/match-data.js');
+  const match = {
+    matchNumber: 25,
+    teams: [
+      { station: 'Red1', teamNumber: 3650 },
+      { station: 'Blue1', teamNumber: 6016 },
+    ],
+    scoreRedFinal: 27,
+    scoreBlueFinal: 34,
+    redWins: false,
+    blueWins: true,
+  };
+  const result = matchMetrics(
+    match,
+    {
+      scores: {
+        25: {
+          red: {
+            swarmRP: false,
+            pollinator1RP: true,
+            pollinator2RP: true,
+            autoHiveTips: 1,
+            teleopHiveTips: 2,
+          },
+          blue: {
+            swarmRP: true,
+            pollinator1RP: false,
+            pollinator2RP: true,
+            autoHiveTips: 2,
+            teleopHiveTips: 3,
+          },
+        },
+      },
+      oprs: { 3650: { opr: 24 }, 6016: { opr: 30 } },
+    },
+    2026,
+  );
+  assert.equal(result.redRP, 2);
+  assert.equal(result.blueRP, 5);
+  assert.deepEqual(result.tips, { red: 3, blue: 5 });
+  assert.equal(result.prediction.winner, 'Blue');
+});
+
+test('missing hive tip data never implies a zero score', async () => {
+  const { matchMetrics, fieldLabel } = await import('../frontend/ui/spa/lib/match-data.js');
+  const match = {
+    matchNumber: 1,
+    teams: [{ station: 'Red1', teamNumber: 3650 }],
+    scoreRedFinal: 10,
+    scoreBlueFinal: 10,
+  };
+  const scores = { scores: { 1: { red: { swarmRp: true }, blue: { swarmRp: false } } } };
+  assert.equal(matchMetrics(match, scores, 2026).tips, null);
+  assert.equal(fieldLabel(1), 'Field 1');
+  assert.equal(fieldLabel('2'), 'Field 2');
+  assert.equal(fieldLabel(null), null);
+});
