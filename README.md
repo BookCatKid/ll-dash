@@ -57,7 +57,7 @@ Individual checklist completion and per-device tab visibility already use browse
 
 The included [`render.yaml`](render.yaml) is suitable for temporary evaluation, not permanent free hosting. [Render's free PostgreSQL expires after 30 days](https://render.com/docs/free), and free web service filesystems are ephemeral. Do not rely on either for durable scouting data. A paid persistent database or a host with a persistent disk is required to retain shared information reliably.
 
-To deploy, set a strong `SECRET_KEY` and point `DATABASE_URL` at your persistent SQLite file or PostgreSQL instance. Start the app with `gunicorn "app:create_app()" --bind 0.0.0.0:$PORT`, `wsgi.py` (any WSGI server), or a comparable process manager. On first visit the setup wizard requests your FTC Events API credentials, team number, and PIN.
+To deploy, set a strong `SECRET_KEY` and point `DATABASE_URL` at your persistent SQLite file or PostgreSQL instance. Start the app with `gunicorn "app:create_app()" --bind 0.0.0.0:$PORT` or a comparable process manager. On first visit the setup wizard requests your FTC Events API credentials, team number, and PIN.
 
 ### Deploy to Oracle Cloud (free forever, recommended)
 
@@ -86,41 +86,6 @@ printf 'SECRET_KEY=<random>\nDATABASE_URL=sqlite:////home/ubuntu/lldash/lldash.d
 # cloudflared: sudo cloudflared service install <tunnel-token>
 # cron: */2 * * * * /home/ubuntu/lldash/deploy.sh >> ~/lldash/deploy.log 2>&1
 ```
-
-### Deploy to PythonAnywhere (free, persistent disk)
-
-PythonAnywhere's free tier keeps files between restarts, so the default
-SQLite database (`lldash.db`) survives redeploys — no separate database
-service needed.
-
-1. **Create the account** at [pythonanywhere.com](https://www.pythonanywhere.com)
-   and note your username (e.g. `yourname`).
-2. **Clone the repo** into your home directory (PA console → Bash):
-   ```bash
-   git clone https://github.com/<you>/ll-dash.git ~/lldash
-   cd ~/lldash
-   ```
-3. **Create a virtualenv** and install dependencies:
-   ```bash
-   mkvirtualenv lldash --python=python3.11
-   pip install -r requirements.txt
-   ```
-4. **Web tab → Add a new web app** (Manual configuration, Flask is fine —
-   we supply our own WSGI file):
-   - Source code: `/home/<you>/lldash`
-   - WSGI file: `/home/<you>/lldash/wsgi.py`
-   - Virtualenv: `lldash`
-   - Add environment variable `SECRET_KEY` (any long random string).
-5. **Reload** the web app. `wsgi.py` creates `lldash.db` and the tables
-   automatically; visit the site and complete the setup wizard.
-6. **Auto-deploy on push** — add three repo secrets
-   (`PA_USERNAME`, `PA_TOKEN` from
-   [pythonanywhere.com/settings/api](https://www.pythonanywhere.com/settings/api/),
-   and `PA_DOMAIN` = `yourname.pythonanywhere.com`). The
-   [deploy workflow](.github/workflows/deploy.yml) then rebuilds the
-   frontend, commits the bundle if it changed, and triggers a PA reload —
-   `wsgi.py` pulls the latest commit each time it loads. Push to `main`
-   and you're live in ~1 minute.
 
 ## Run locally
 

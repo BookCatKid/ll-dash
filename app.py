@@ -10,7 +10,7 @@ def _database_url():
     url = os.getenv('DATABASE_URL')
     if not url:
         # Default: SQLite file next to app.py. Works on hosts with a
-        # persistent filesystem (PythonAnywhere, VMs); override with
+        # persistent filesystem (VMs, dedicated hosts); override with
         # DATABASE_URL for Postgres or ephemeral-disk hosts.
         url = 'sqlite:///' + os.path.join(
             os.path.dirname(os.path.abspath(__file__)), 'lldash.db')
