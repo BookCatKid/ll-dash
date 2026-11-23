@@ -1,7 +1,14 @@
-const CACHE = 'ftcdash-v20';
+const CACHE = 'ftcdash-v21';
 const STATIC = [
   '/static/build/app.js',
   '/static/css/app.css',
+  '/favicon.ico',
+  '/static/icons/favicon-16.png',
+  '/static/icons/favicon-32.png',
+  '/static/icons/apple-touch-icon.png',
+  '/static/icons/icon-192.png',
+  '/static/icons/icon-512.png',
+  '/static/icons/icon-maskable-512.png',
   ...[
     'layout-dashboard','calendar-days','chart-no-axes-column','clipboard-list','users',
     'chart-line','notebook-tabs','monitor','trophy','medal',
