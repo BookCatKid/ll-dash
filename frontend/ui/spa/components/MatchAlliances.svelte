@@ -44,14 +44,16 @@
               ourTeam={teamNumber}
               onOpen={onTeam}
             />
-            <div class="match-alliance-member-info">
-              {#if team.teamName}<span class="match-alliance-member-name" title={team.teamName}>
-                  {team.teamName}
-                </span>{/if}
-              {#if !compact}<span class="match-alliance-member-station">
+            {#if !compact}
+              <div class="match-alliance-member-info">
+                {#if team.teamName}<span class="match-alliance-member-name" title={team.teamName}>
+                    {team.teamName}
+                  </span>{/if}
+                <span class="match-alliance-member-station">
                   {team.station}{team.surrogate ? ' · Surrogate' : ''}{team.dq ? ' · DQ' : ''}
-                </span>{/if}
-            </div>
+                </span>
+              </div>
+            {/if}
             {#if !compact && ranks[team.teamNumber]}
               <span class="match-alliance-member-rank">#{ranks[team.teamNumber].rank}</span>
             {/if}

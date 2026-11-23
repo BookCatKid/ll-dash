@@ -76,7 +76,7 @@
   />
   {#if displayed.length}
     {#each displayed as match (match.matchNumber)}
-      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} season={settings.active_season} />
+      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} />
     {/each}
   {:else}
     <div class="empty-state">No matches.</div>

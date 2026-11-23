@@ -89,27 +89,13 @@
     {#if remaining}<div class="countdown-block">
         <div class="countdown-time">{remaining}</div>
       </div>{/if}
-    <MatchRow
-      match={next}
-      {teamNumber}
-      {onMatch}
-      {onTeam}
-      {metrics}
-      season={settings.active_season}
-    />
+    <MatchRow match={next} {teamNumber} {onMatch} {onTeam} {metrics} />
   {/if}
   {#if last}
     <div class="card-header dashboard-match-heading">
       <span class="card-title">Last match</span>
     </div>
-    <MatchRow
-      match={last}
-      {teamNumber}
-      {onMatch}
-      {onTeam}
-      {metrics}
-      season={settings.active_season}
-    />
+    <MatchRow match={last} {teamNumber} {onMatch} {onTeam} {metrics} />
   {/if}
   {#if rank}
     <div class="card">
@@ -158,7 +144,7 @@
       </button>
     </div>
     {#each [...played].slice(-5).reverse() as match (match.matchNumber)}
-      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} season={settings.active_season} />
+      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} />
     {/each}
   {/if}
   <div class="card-header" style="margin-top:1.25rem">
