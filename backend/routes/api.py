@@ -258,7 +258,7 @@ def get_matches():
     if err: return err
     season = request.args.get('season', _season())
     level  = request.args.get('level', 'qual')
-    return jsonify(ftc_api.get_match_scores(season, event, level) or {'MatchScores': []})
+    return jsonify(ftc_api.get_match_scores(season, event, level) or {'matchScores': []})
 
 
 # Playoff variants — convenience aliases for /schedule and /matches with
@@ -275,7 +275,7 @@ def get_playoff_matches():
     event, err = _require_event()
     if err: return err
     season = request.args.get('season', _season())
-    return jsonify(ftc_api.get_match_scores(season, event, 'playoff') or {'MatchScores': []})
+    return jsonify(ftc_api.get_match_scores(season, event, 'playoff') or {'matchScores': []})
 
 @api_bp.route('/oprs', methods=['GET'])
 def get_oprs():
@@ -289,18 +289,17 @@ def get_oprs():
             for t in r.json():
                 num   = t.get('teamNumber')
                 stats = t.get('stats') or {}
-                tot   = (stats.get('tot') or {})
-                auto  = (stats.get('auto') or {})
-                dc    = (stats.get('dc') or {})
-                eg    = (stats.get('eg') or {})
+                opr = stats.get('opr') or {}
                 if num:
+                    total = opr.get('totalPointsNp', 0)
                     opr_list.append({
                         'teamNumber': num,
-                        'opr':     tot.get('value', 0),
-                        'np_opr':  tot.get('value', 0),
-                        'autoOpr': auto.get('value', 0),
-                        'dcOpr':   dc.get('value', 0),
-                        'egOpr':   eg.get('value', 0),
+                        'opr':     total,
+                        'np_opr':  total,
+                        'autoOpr': opr.get('autoPoints', 0),
+                        'dcOpr':   opr.get('dcPoints', 0),
+                        'egOpr':   opr.get('dcParkPoints', opr.get('dcBasePoints', 0)),
+                        'tipsOpr': opr.get('tips') if int(season) == 2026 else None,
                     })
             return jsonify({'oprList': opr_list})
         return jsonify({'oprList': []}), r.status_code
@@ -632,11 +631,14 @@ def ftcscout_event_oprs(event_code):
             }
           }
           stats {
+            ... on TeamEventStats2026 {
+              opr { totalPointsNp autoPoints dcPoints dcParkPoints tips }
+            }
             ... on TeamEventStats2025 {
-              opr { totalPointsNp autoPoints dcPoints }
+              opr { totalPointsNp autoPoints dcPoints dcBasePoints }
             }
             ... on TeamEventStats2024 {
-              opr { totalPointsNp autoPoints dcPoints }
+              opr { totalPointsNp autoPoints dcPoints dcParkPoints }
             }
             ... on TeamEventStats2023 {
               opr { totalPointsNp autoPoints dcPoints }
@@ -653,6 +655,9 @@ def ftcscout_event_oprs(event_code):
         print(f"[FTCScout GraphQL oprs {event_code}] status={r.status_code}", end='')
         if r.status_code == 200:
             data = r.json()
+            if data.get('errors'):
+                print(f" GraphQL errors: {data['errors']}")
+                return jsonify({'error': 'FTCScout OPR query failed'}), 502
             teams = (data.get('data') or {}).get('eventByCode') or {}
             teams = teams.get('teams') or []
             print(f" teams={len(teams)}")
@@ -671,7 +676,7 @@ def ftcscout_event_oprs(event_code):
                 l_tot  = lo.get('totalPointsNp') or 0
                 l_auto = lo.get('autoPoints') or 0
                 l_dc   = lo.get('dcPoints') or 0
-                l_eg   = round(l_tot - l_auto - l_dc, 2) if l_tot else 0
+                l_eg   = lo.get('dcParkPoints', lo.get('dcBasePoints', 0))
                 opr_list.append({
                     'teamNumber': num,
                     'opr': tot,
@@ -682,6 +687,7 @@ def ftcscout_event_oprs(event_code):
                     'localAutoOpr': l_auto,
                     'localDcOpr': l_dc,
                     'localEgOpr': l_eg,
+                    'localTipsOpr': lo.get('tips') if season == 2026 else None,
                 })
             return jsonify({'oprList': opr_list})
         print()
@@ -692,11 +698,13 @@ def ftcscout_event_oprs(event_code):
 
 @api_bp.route('/ftcscout/event/<event_code>/match-rp', methods=['GET'])
 def ftcscout_event_match_rp(event_code):
-    """Returns per-match RP bonus flags from FTCScout GraphQL.
-    Shape: {matches: [{matchNum, tournamentLevel, red:{movementRp,goalRp,patternRp,totalPointsNp},
-                       blue:{...}}]}
+    """Returns season-specific match RP flags and score breakdowns.
+
+    The 2026 and 2025 score schemas are separate GraphQL union members.
     """
     season = int(request.args.get('season', _season()))
+    if season not in (2025, 2026):
+        return jsonify({'matches': []})
     query = '''
     query EventMatches($season: Int!, $code: String!) {
       eventByCode(season: $season, code: $code) {
@@ -704,6 +712,18 @@ def ftcscout_event_match_rp(event_code):
           matchNum
           tournamentLevel
           scores {
+            ... on MatchScores2026 {
+              red {
+                swarmRp pollinator1Rp pollinator2Rp tips
+                autoHivePoints dcHivePoints dcFlowerPoints dcGardenPoints dcParkPoints
+                totalPointsNp
+              }
+              blue {
+                swarmRp pollinator1Rp pollinator2Rp tips
+                autoHivePoints dcHivePoints dcFlowerPoints dcGardenPoints dcParkPoints
+                totalPointsNp
+              }
+            }
             ... on MatchScores2025 {
               red { movementRp goalRp patternRp totalPointsNp }
               blue { movementRp goalRp patternRp totalPointsNp }
@@ -720,6 +740,9 @@ def ftcscout_event_match_rp(event_code):
         print(f"[FTCScout GraphQL match-rp {event_code}] status={r.status_code}", end='')
         if r.status_code == 200:
             data = r.json()
+            if data.get('errors'):
+                print(f" GraphQL errors: {data['errors']}")
+                return jsonify({'error': 'FTCScout match query failed'}), 502
             evt = (data.get('data') or {}).get('eventByCode') or {}
             matches = evt.get('matches') or []
             print(f" matches={len(matches)}")

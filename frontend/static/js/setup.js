@@ -34,8 +34,7 @@ function showSetupWizard(cfg) {
   // — Step 1: FTC API credentials —
   function renderStep1(err) {
     shell(`
-      <div class="setup-title">Welcome 👋</div>
-      <div class="setup-sub">Let's set up your FTC competition dashboard. First, connect to the official <strong>FTC Events API</strong> — live schedules, scores and rankings come from there.</div>
+      <div class="setup-title">FTC Events API</div>
       <div class="form-group">
         <label class="form-label">API Username</label>
         <input class="form-input" id="su-user" value="${escHtml(state.username)}" autocomplete="off" placeholder="Your FTC Events API username"/>
@@ -46,7 +45,7 @@ function showSetupWizard(cfg) {
         <div class="setting-hint">No credentials yet? Request free access at <a href="https://ftc-events.firstinspires.org/services/API" target="_blank" rel="noopener" style="color:var(--accent2)">ftc-events.firstinspires.org/services/API</a></div>
       </div>
       <div class="setup-error" id="su-err">${err?escHtml(err):''}</div>
-      <button class="btn btn-primary btn-block" id="su-next1">Validate &amp; Continue →</button>
+      <button class="btn btn-primary btn-block" id="su-next1">Validate and continue</button>
     `, 25);
     document.getElementById('su-next1').addEventListener('click', async () => {
       state.username = document.getElementById('su-user').value.trim();
@@ -57,7 +56,7 @@ function showSetupWizard(cfg) {
       btn.disabled = true; btn.textContent = 'Checking credentials…';
       const res = await API.setupValidate({username: state.username, key: state.key})
         .catch(() => ({valid:false, error:'Could not reach the server'}));
-      if (!res.valid) { btn.disabled=false; btn.textContent='Validate & Continue →'; errEl.textContent = res.error || 'Invalid credentials'; return; }
+      if (!res.valid) { btn.disabled=false; btn.textContent='Validate and continue'; errEl.textContent = res.error || 'Invalid credentials'; return; }
       state.currentSeason = res.currentSeason;
       state.maxSeason     = res.maxSeason || res.currentSeason;
       if (!state.season) state.season = res.currentSeason;
@@ -70,8 +69,7 @@ function showSetupWizard(cfg) {
     const seasons = [];
     for (let s = state.maxSeason || 2025; s >= 2019; s--) seasons.push(s);
     shell(`
-      <div class="setup-title">Your Team ✓ <span class="setup-ok">API connected</span></div>
-      <div class="setup-sub">Tell the dashboard who you are. Your team's matches get highlighted everywhere.</div>
+      <div class="setup-title">Team</div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">Team Number</label>
@@ -86,16 +84,16 @@ function showSetupWizard(cfg) {
       </div>
       <div class="form-group">
         <label class="form-label">Event Code (optional)</label>
-        <input class="form-input" id="su-event" value="${escHtml(state.eventCode)}" placeholder="e.g. USNYLIQ1 — or pick one later in Settings"/>
+        <input class="form-input" id="su-event" value="${escHtml(state.eventCode)}" placeholder="e.g. USNYLIQ1"/>
       </div>
       <div class="form-group">
         <label class="form-label">Team PIN (4 digits)</label>
-        <input class="form-input" id="su-pin" inputmode="numeric" maxlength="4" value="${escHtml(state.pin)}" placeholder="Unlocks the app for your team"/>
+        <input class="form-input" id="su-pin" inputmode="numeric" maxlength="4" value="${escHtml(state.pin)}" placeholder="4-digit PIN"/>
       </div>
       <div class="setup-error" id="su-err"></div>
       <div style="display:flex;gap:.5rem">
-        <button class="btn btn-secondary" id="su-back2">← Back</button>
-        <button class="btn btn-primary" style="flex:1" id="su-next2">Continue →</button>
+        <button class="btn btn-secondary" id="su-back2">Back</button>
+        <button class="btn btn-primary" style="flex:1" id="su-next2">Continue</button>
       </div>
     `, 50);
     document.getElementById('su-back2').addEventListener('click', () => { step=1; renderStep1(); });
@@ -114,8 +112,7 @@ function showSetupWizard(cfg) {
   // — Step 3: branding & theme —
   function renderStep3() {
     shell(`
-      <div class="setup-title">Make It Yours 🎨</div>
-      <div class="setup-sub">Name your dashboard and pick your team colors — they apply to the whole app, including the home-screen icon title.</div>
+      <div class="setup-title">Appearance</div>
       <div class="form-group">
         <label class="form-label">Dashboard Name</label>
         <div class="form-row" id="su-prefix-row" style="${state.useCustom?'display:none':''}">
@@ -142,8 +139,8 @@ function showSetupWizard(cfg) {
       </div>
       <div class="setup-error" id="su-err"></div>
       <div style="display:flex;gap:.5rem">
-        <button class="btn btn-secondary" id="su-back3">← Back</button>
-        <button class="btn btn-primary" style="flex:1" id="su-finish">Finish Setup ✓</button>
+        <button class="btn btn-secondary" id="su-back3">Back</button>
+        <button class="btn btn-primary" style="flex:1" id="su-finish">Finish</button>
       </div>
     `, 75);
 
@@ -184,13 +181,12 @@ function showSetupWizard(cfg) {
           theme_bg:         state.bg,
         });
       } catch (e) {
-        btn.disabled = false; btn.textContent = 'Finish Setup ✓';
+        btn.disabled = false; btn.textContent = 'Finish';
         document.getElementById('su-err').textContent = (e.message||'Setup failed').replace(/^\d+:\s*/,'').replace(/[{}"]/g,'').replace('error:','');
         return;
       }
       shell(`
-        <div class="setup-title">All Set 🎉</div>
-        <div class="setup-sub">Your dashboard is configured. Loading <strong>${escHtml(dashName())}</strong>…</div>
+        <div class="setup-title">Loading</div>
       `, 100);
       setTimeout(()=>location.reload(), 900);
     });

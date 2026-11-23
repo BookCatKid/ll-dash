@@ -1,6 +1,7 @@
-const CACHE = 'ftcdash-v5';
+const CACHE = 'ftcdash-v7';
 const STATIC = ['/static/css/app.css','/static/js/api.js','/static/js/app.js','/static/js/setup.js',
-  '/static/js/pages/dashboard.js','/static/js/pages/schedule.js','/static/js/pages/rankings.js',
+  '/static/js/pages/dashboard.js','/static/js/pages/match-scoring.js',
+  '/static/js/pages/schedule.js','/static/js/pages/rankings.js',
   '/static/js/pages/scouting.js','/static/js/pages/alliance.js','/static/js/pages/simulator.js',
   '/static/js/pages/hub.js','/static/js/pages/bigscreen.js','/static/js/pages/playoffs.js',
   '/static/js/pages/awards.js'];

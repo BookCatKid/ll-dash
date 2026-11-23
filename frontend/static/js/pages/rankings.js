@@ -35,6 +35,9 @@ async function rankings() {
     });
   }
 
+  const isBioBuzz = Number(season) === 2026;
+  const secondaryLabel = Number(season) >= 2025 ? 'Avg NP' : 'Avg Sc';
+  const endgameLabel = isBioBuzz ? 'Park' : Number(season) === 2025 ? 'Base' : 'End';
   let oprScope = 'global'; // 'global' or 'local'
 
   function mergeOpr() {
@@ -63,6 +66,7 @@ async function rankings() {
         case 'wl':         av = a.wins; bv = b.wins; break;
         case 'rp':         av = a.sortOrder1 || 0; bv = b.sortOrder1 || 0; break;
         case 'avgsc':      av = a.sortOrder2 || 0; bv = b.sortOrder2 || 0; break;
+        case 'tips':       av = a.sortOrder3 || 0; bv = b.sortOrder3 || 0; break;
         case 'oprTotal':   av = a.oprTotal ?? -1; bv = b.oprTotal ?? -1; break;
         case 'oprAuto':    av = a.oprAuto ?? -1; bv = b.oprAuto ?? -1; break;
         case 'oprTeleop':  av = a.oprTeleop ?? -1; bv = b.oprTeleop ?? -1; break;
@@ -85,6 +89,7 @@ async function rankings() {
         <td>${r.wins}-${r.losses}${r.ties?'-'+r.ties:''}</td>
         <td>${r.sortOrder1?.toFixed(3)??'--'}</td>
         <td>${r.sortOrder2?.toFixed(1)??'--'}</td>
+        ${isBioBuzz ? `<td>${r.sortOrder3?.toFixed(2)??'--'}</td>` : ''}
         <td style="color:var(--accent2)">${r.oprTotal!=null?r.oprTotal.toFixed(1):'--'}</td>
         <td>${r.oprAuto!=null?r.oprAuto.toFixed(1):'--'}</td>
         <td>${r.oprTeleop!=null?r.oprTeleop.toFixed(1):'--'}</td>
@@ -98,11 +103,12 @@ async function rankings() {
           <th class="sortable-th" data-sort="team" style="text-align:left">Team${arrow('team')}</th>
           <th class="sortable-th" data-sort="wl">W-L${arrow('wl')}</th>
           <th class="sortable-th" data-sort="rp">RP${arrow('rp')}</th>
-          <th class="sortable-th" data-sort="avgsc">Avg Sc${arrow('avgsc')}</th>
+          <th class="sortable-th" data-sort="avgsc">${secondaryLabel}${arrow('avgsc')}</th>
+          ${isBioBuzz ? `<th class="sortable-th" data-sort="tips">Avg Tips${arrow('tips')}</th>` : ''}
           <th class="sortable-th" data-sort="oprTotal" style="color:var(--accent2)">OPR${arrow('oprTotal')}</th>
           <th class="sortable-th" data-sort="oprAuto">Auto${arrow('oprAuto')}</th>
           <th class="sortable-th" data-sort="oprTeleop">Tele${arrow('oprTeleop')}</th>
-          <th class="sortable-th" data-sort="oprEndgame">End${arrow('oprEndgame')}</th>
+          <th class="sortable-th" data-sort="oprEndgame">${endgameLabel}${arrow('oprEndgame')}</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table>`;
@@ -234,7 +240,7 @@ async function openTeamModal(teamNum) {
     ftcHtml=`
       <div style="margin-bottom:1rem;padding:.75rem;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs)">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
-          <div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.08em">FTCScout OPR Stats ${season}–${String(parseInt(season)+1).slice(-2)}</div>
+          <div style="font-size:.62rem;font-family:var(--mono);color:var(--text3);letter-spacing:.08em">FTCScout OPR Stats ${season}–${String(parseInt(season)+1).slice(-2)}</div>
           ${count?`<div style="font-size:.6rem;font-family:var(--mono);color:var(--text3)">${count.toLocaleString()} events</div>`:''}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.4rem">
@@ -249,7 +255,7 @@ async function openTeamModal(teamNum) {
               <div style="font-family:var(--mono);font-size:.88rem;font-weight:700;color:var(--accent2)">${v}</div>
               ${r?`<div style="font-family:var(--mono);font-size:.6rem;color:var(--text3)">${r}</div>`:''}
             </div>
-            <div style="font-size:.6rem;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${l}</div>
+            <div style="font-size:.6rem;color:var(--text3);letter-spacing:.05em">${l}</div>
           </div>`).join('')}
         </div>
         <div style="font-size:.65rem;font-family:var(--mono);color:var(--text2);margin-top:.4rem">

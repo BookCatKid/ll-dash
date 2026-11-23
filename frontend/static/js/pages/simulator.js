@@ -8,6 +8,11 @@ async function simulator() {
   loadingPage();
 
   const season = appSettings.active_season || 2025;
+  const bonuses = rankingPointBonuses(season);
+  if (!bonuses.length) {
+    renderPage('<div class="empty-state">Rankings simulation is available for DECODE and BIOBUZZ only.</div>');
+    return;
+  }
   const [rankData, schedData, oprResult, matchRpData] = await Promise.all([
     API.getRankings().catch(()=>null),
     API.getSchedule('qual').catch(()=>null),
@@ -88,7 +93,16 @@ async function simulator() {
     if (s.played) {
       return { redWon: !!m.redWins, blueWon: !!m.blueWins, tied: m.redWins === false && m.blueWins === false };
     }
-    // Simulated: compare alliance RP. Tie when equal.
+    // Auto predictions know their winner independently of bonus RPs.
+    if (s.predictedWinner) {
+      return {
+        redWon: s.predictedWinner === 'Red',
+        blueWon: s.predictedWinner === 'Blue',
+        tied: s.predictedWinner === 'Tie',
+      };
+    }
+    // Manually entered RP alone does not uniquely determine the winner.
+    // Retain the existing best-effort comparison for manual adjustments.
     if (s.red > s.blue)  return { redWon: true,  blueWon: false, tied: false };
     if (s.blue > s.red)  return { redWon: false, blueWon: true,  tied: false };
     return { redWon: false, blueWon: false, tied: true };
@@ -102,24 +116,21 @@ async function simulator() {
   }
 
   // ── RP estimation ──────────────────────────────────────────
-  // DECODE qual RP = Movement + Goal + Pattern bonuses (+1 each, earned by
-  // hitting score thresholds, Manual §10.5) + 3 win / 1 tie. Rather than
-  // guessing thresholds from OPR, each team's bonus-RP rate is measured
-  // from its played matches at this event (FTCScout publishes the actual
-  // per-alliance bonus flags), then combined with the OPR win prediction.
-  const bonusRates = {};                                  // team → {k: [earned, played]}
-  const evtTotals  = {movement: [0, 0], goal: [0, 0], pattern: [0, 0]};
+  // Estimate each bonus from observed event match outcomes instead of
+  // guessing season-specific scoring thresholds from OPR.
+  const bonusRates = {};                                  // team → {key: [earned, played]}
+  const freshBonusCounts = () => Object.fromEntries(bonuses.map(b => [b.key, [0, 0]]));
+  const evtTotals = freshBonusCounts();
   schedule.filter(m => m.scoreRedFinal !== null).forEach(m => {
     const sc = scoresMap[m.matchNumber];
     if (!sc) return;
     [['Red', sc.red], ['Blue', sc.blue]].forEach(([side, a]) => {
       const f = allianceRPFlags(a);
       const teams = (m.teams || []).filter(t => t.station?.startsWith(side));
-      ['movement', 'goal', 'pattern'].forEach(k => {
+      bonuses.forEach(({key: k}) => {
         evtTotals[k][0] += f[k] ? 1 : 0; evtTotals[k][1]++;
         teams.forEach(t => {
-          const r = bonusRates[t.teamNumber] = bonusRates[t.teamNumber] ||
-            {movement: [0, 0], goal: [0, 0], pattern: [0, 0]};
+          const r = bonusRates[t.teamNumber] = bonusRates[t.teamNumber] || freshBonusCounts();
           r[k][0] += f[k] ? 1 : 0; r[k][1]++;
         });
       });
@@ -139,14 +150,11 @@ async function simulator() {
     const red  = (m.teams || []).filter(t => t.station?.startsWith('Red'));
     const blue = (m.teams || []).filter(t => t.station?.startsWith('Blue'));
     const pred = predictMatch(m);
-    const probsFor = side => ({
-      movement: bonusProb(side, 'movement'),
-      goal:     bonusProb(side, 'goal'),
-      pattern:  bonusProb(side, 'pattern'),
-    });
+    const probsFor = side => Object.fromEntries(
+      bonuses.map(b => [b.key, bonusProb(side, b.key)]));
     const pR = probsFor(red), pB = probsFor(blue);
-    const likely = p => ['movement', 'goal', 'pattern'].filter(k => p[k] >= 0.5).length;
-    const sum    = p => p.movement + p.goal + p.pattern;
+    const likely = p => bonuses.filter(b => p[b.key] >= 0.5).length;
+    const sum = p => bonuses.reduce((total, b) => total + p[b.key], 0);
     let redRP, blueRP;
     if (pred.winner === 'Tie')      { redRP = 1 + likely(pR); blueRP = 1 + likely(pB); }
     else if (pred.winner === 'Red') { redRP = 3 + likely(pR); blueRP = likely(pB); }
@@ -159,7 +167,12 @@ async function simulator() {
   }
   function applyEstimate(m) {
     const est = estimateRP(m);
-    sim[m.matchNumber] = {red: est.redRP, blue: est.blueRP, played: false};
+    sim[m.matchNumber] = {
+      red: est.redRP,
+      blue: est.blueRP,
+      played: false,
+      predictedWinner: est.pred.winner,
+    };
   }
 
   // ── Projection calculator ──
@@ -311,7 +324,7 @@ async function simulator() {
         <button class="btn btn-sm btn-primary" id="sim-auto-all" style="flex:1">✨ Auto-Predict All</button>
         <button class="btn btn-sm btn-secondary" id="sim-reset-btn">Reset</button>
       </div>
-      <div class="sim-rp-rules">RP = Movement + Goal + Pattern (+1 each) + 3 Win / 1 Tie · max 6<br>
+      <div class="sim-rp-rules">RP = ${bonuses.map(b => b.label).join(' + ')} (+1 each) + 3 Win / 1 Tie · max 6<br>
       Est RP = each alliance's bonus-RP rates from played matches + OPR win odds</div>
       ${schedule.length ? matchRows : '<div class="empty-state" style="padding:1.5rem"><div>No matches found.</div></div>'}
     `;
@@ -339,6 +352,7 @@ async function simulator() {
         const mn = parseInt(btn.dataset.match);
         const side = btn.dataset.side;
         const s = ensureSim(mn);
+        delete s.predictedWinner;
         s[side] = Math.max(0, s[side] - 1);
         renderScheduleTab();
       });
@@ -348,6 +362,7 @@ async function simulator() {
         const mn = parseInt(btn.dataset.match);
         const side = btn.dataset.side;
         const s = ensureSim(mn);
+        delete s.predictedWinner;
         s[side] = Math.min(6, s[side] + 1);
         renderScheduleTab();
       });

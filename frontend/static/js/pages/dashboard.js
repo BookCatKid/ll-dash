@@ -53,7 +53,7 @@ async function dashboard() {
     cdHtml = `
       <div class="card card-accent">
         <div class="card-header">
-          <span class="card-title">Next — Q${nextMatch.matchNumber}</span>
+          <span class="card-title">Next: Q${nextMatch.matchNumber}</span>
           <span class="match-time">${formatTime(nextMatch.startTime)}</span>
         </div>
         <div class="countdown-block">
@@ -66,7 +66,7 @@ async function dashboard() {
           ${blue.map(t=>teamChipNamed(t,'blue')).join('')}
         </div>
         <div style="margin-top:.6rem;padding:.5rem .6rem;background:var(--bg3);border-radius:var(--rs);font-size:.75rem">
-          <div style="color:var(--text3);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.25rem">${ourAlliance} Alliance — With You</div>
+          <div style="color:var(--text3);font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;margin-bottom:.25rem">${ourAlliance} alliance</div>
           ${allies.map(t=>{
             const r=rankings.find(x=>x.teamNumber==t.teamNumber);
             return `<div style="display:flex;align-items:center;gap:.5rem;padding:.2rem 0">
@@ -75,7 +75,7 @@ async function dashboard() {
               ${r?`<span style="font-family:var(--mono);font-size:.68rem;color:var(--text2);margin-left:auto">#${r.rank} · ${r.wins}W</span>`:''}
             </div>`;
           }).join('')}
-          <div style="color:var(--text3);font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;margin:0.4rem 0 .25rem">Opponents</div>
+          <div style="color:var(--text3);font-family:var(--mono);font-size:.62rem;letter-spacing:.08em;margin:0.4rem 0 .25rem">Opponents</div>
           ${opps.map(t=>{
             const r=rankings.find(x=>x.teamNumber==t.teamNumber);
             const oAlliance=t.station?.startsWith('Red')?'red':'blue';
@@ -110,7 +110,7 @@ async function dashboard() {
     lastMatchHtml = `
       <div class="card" style="margin-bottom:.75rem;border-left:3px solid ${resultColor}">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.4rem">
-          <span style="font-size:.62rem;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.08em">Last Match — Q${last.matchNumber}</span>
+          <span style="font-size:.62rem;font-family:var(--mono);color:var(--text3);letter-spacing:.08em">Last match: Q${last.matchNumber}</span>
           <span style="font-family:var(--mono);font-size:.95rem;font-weight:800;color:${resultColor}">${resultLabel}</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin-bottom:.45rem">
@@ -157,10 +157,12 @@ async function dashboard() {
         <div class="stat-box"><div class="stat-value" style="font-size:1.1rem">${highScore??'--'}</div><div class="stat-label">High Score</div></div>
       </div>
       <div style="margin-top:.75rem;display:flex;gap:.4rem;flex-wrap:wrap">
-        ${[['RP Avg',ourRank.sortOrder1?.toFixed(4)],['SO2',ourRank.sortOrder2?.toFixed(2)],['Counted',ourRank.matchesCounted+'/'+ourRank.matchesPlayed],['DQ',ourRank.dq||0]].map(([l,v])=>`
+        ${[['RP Avg',ourRank.sortOrder1?.toFixed(4)],
+            [Number(season) >= 2025 ? 'Avg NP' : 'SO2',ourRank.sortOrder2?.toFixed(2)],
+            ...(Number(season) === 2026 ? [['Avg Tips',ourRank.sortOrder3?.toFixed(2)]] : []),['Counted',ourRank.matchesCounted+'/'+ourRank.matchesPlayed],['DQ',ourRank.dq||0]].map(([l,v])=>`
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:.3rem .6rem;text-align:center">
           <div style="font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--accent2)">${v??'--'}</div>
-          <div style="font-size:.58rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em">${l}</div>
+          <div style="font-size:.58rem;color:var(--text3);letter-spacing:.06em">${l}</div>
         </div>`).join('')}
       </div>
     </div>` : `<div class="card"><div class="empty-state" style="padding:1rem 0"><div>Rankings not yet available.</div></div></div>`;

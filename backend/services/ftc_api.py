@@ -20,7 +20,7 @@ Key response shapes (from swagger):
                                           scoreRedFinal,scoreBlueFinal,
                                           scoreRedAuto,scoreBlueAuto,...}]}
                                           (score fields null when unplayed)
-  /v2.0/{s}/scores/{code}/{lvl}      -> {MatchScores:[{matchNumber,matchLevel,
+  /v2.0/{s}/scores/{code}/{lvl}      -> {matchScores:[{matchNumber,matchLevel,
                                           alliances:[{alliance,totalPoints,
                                           autoPoints,dcPoints,endgamePoints,
                                           penaltyPoints,...}]}]}
@@ -146,7 +146,8 @@ def get_schedule_basic(season, event_code, level='qual'):
     Shape: {schedule:[{description, field, tournamentLevel, startTime,
                       matchNumber, teams:[{teamNumber,station,...}]}]}
     """
-    return _get(f"{FTC_BASE}/{season}/schedule/{event_code}/{level}")
+    return _get(f"{FTC_BASE}/{season}/schedule/{event_code}",
+                params={"tournamentLevel": level})
 
 
 def get_match_scores(season, event_code, level='qual'):

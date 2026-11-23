@@ -3,11 +3,12 @@ async function schedule() {
   loadingPage();
 
   const season = appSettings.active_season || 2025;
-  const [schedData, rankData, oprResult, matchRpData] = await Promise.all([
-    API.getSchedule('qual').catch(()=>null),
-    API.getRankings().catch(()=>null),
-    API.ftcscoutEventOprs(appSettings.active_event_code, season).catch(()=>null),
-    API.ftcscoutEventMatchRP(appSettings.active_event_code, season).catch(()=>null),
+  const [schedData, rankData, oprResult, matchRpData, officialScores] = await Promise.all([
+    API.getSchedule('qual').catch(() => null),
+    API.getRankings().catch(() => null),
+    API.ftcscoutEventOprs(appSettings.active_event_code, season).catch(() => null),
+    API.ftcscoutEventMatchRP(appSettings.active_event_code, season).catch(() => null),
+    Number(season) === 2026 ? API.getMatches('qual').catch(() => null) : null,
   ]);
   if (currentPage !== 'schedule') return;  // stale fetch — user navigated away
 
@@ -22,6 +23,20 @@ async function schedule() {
     if (ms.tournamentLevel && ms.tournamentLevel !== 'Quals' && ms.tournamentLevel !== 'qual') return;
     scoresMap[ms.matchNum] = { red: ms.red, blue: ms.blue };
   });
+  // Prefer the official FIRST score sheets for BIOBUZZ whenever available.
+  // Each match contains one score record for red and another for blue.
+  const officialScoreMap = {};
+  for (const match of officialScores?.matchScores || []) {
+    const red = match.alliances?.find(alliance => alliance.alliance === 'Red');
+    const blue = match.alliances?.find(alliance => alliance.alliance === 'Blue');
+    if (match.matchNumber == null || !red || !blue) continue;
+    officialScoreMap[match.matchNumber] = {red, blue};
+    scoresMap[match.matchNumber] = {
+      red: {...red, tips: (red.autoHiveTips || 0) + (red.teleopHiveTips || 0)},
+      blue: {...blue, tips: (blue.autoHiveTips || 0) + (blue.teleopHiveTips || 0)},
+    };
+  }
+  window._officialMatchScoresMap = officialScoreMap;
   window._matchScoresMap = scoresMap;
 
   // Build OPR map from FTCScout GraphQL
@@ -108,10 +123,10 @@ async function schedule() {
         scoreHtml=`<div class="match-time">${formatTime(m.startTime)}</div>`;
       }
 
-      // Per-match RP breakdown (from FTCScout GraphQL, played matches only)
+      // Use official ranking-point flags when available, or FTCScout as fallback.
+      const sc = scoresMap[m.matchNumber];
       let rpLine = '';
-      if (played && scoresMap[m.matchNumber]) {
-        const sc = scoresMap[m.matchNumber];
+      if (played && sc) {
         const isTie = !m.redWins && !m.blueWins;
         const redRP  = computeMatchRP(sc.red,  m.redWins,  isTie);
         const blueRP = computeMatchRP(sc.blue, m.blueWins, isTie);
@@ -143,8 +158,10 @@ async function schedule() {
       const subStats = played
         ? `<div class="match-sub-stats">
             ${pairChip('Auto', m.scoreRedAuto??'?', m.scoreBlueAuto??'?')}
-            ${(m.scoreRedFoul||m.scoreBlueFoul)?pairChip('Foul', m.scoreRedFoul||0, m.scoreBlueFoul||0):''}
+            ${(m.scoreRedFoul||m.scoreBlueFoul)?pairChip('Fouls', m.scoreRedFoul||0, m.scoreBlueFoul||0):''}
             ${rpLine}
+            ${Number(season) === 2026 && sc?.red?.tips != null && sc?.blue?.tips != null
+              ? pairChip('Tips', sc.red.tips, sc.blue.tips) : ''}
             ${fieldChip(m.series)}
            </div>
            ${predLine ? `<div class="match-sub-stats">${predLine}</div>` : ''}`
@@ -192,17 +209,15 @@ function openMatchDetail(matchNumber) {
   const fieldNum = m.series != null ? `Field ${m.series + 1}` : '';
   const scoresMap = window._matchScoresMap || {};
   const sc = scoresMap[matchNumber];
+  const officialScore = window._officialMatchScoresMap?.[matchNumber];
   const isTie = played && !m.redWins && !m.blueWins;
   const redRP  = played && sc ? computeMatchRP(sc.red,  m.redWins,  isTie) : null;
   const blueRP = played && sc ? computeMatchRP(sc.blue, m.blueWins, isTie) : null;
+  const videoUrl = typeof m.videoURL === 'string' && /^https?:\/\//i.test(m.videoURL) ? m.videoURL : null;
   const rpBadge = (a, isWinner) => {
     if (!a) return '';
     const f = allianceRPFlags(a);
-    const items = [
-      ['Move',    f.movement],
-      ['Goal',    f.goal],
-      ['Pattern', f.pattern],
-    ];
+    const items = rankingPointBonuses().map(bonus => [bonus.label, f[bonus.key]]);
     const chips = items.map(([lbl, on]) =>
       `<span style="background:${on?'var(--bg1)':'transparent'};color:${on?'var(--green)':'var(--text3)'};padding:1px 5px;border-radius:3px;font-size:.6rem;font-family:var(--mono);border:1px solid ${on?'var(--green)':'var(--border)'}">${on?'+1':'0'} ${lbl}</span>`
     ).join(' ');
@@ -249,24 +264,29 @@ function openMatchDetail(matchNumber) {
         ${played ? `
         <div class="stat-grid" style="margin-bottom:1rem">
           <div class="stat-box" style="border-color:rgba(255,71,87,.3)">
-            <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#ff8a94;font-family:var(--mono);margin-bottom:.3rem">Red Alliance${redRP!=null?` · <span style="color:var(--text)">${redRP} RP</span>`:''}</div>
+            <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;color:#ff8a94;font-family:var(--mono);margin-bottom:.3rem">Red Alliance${redRP!=null?` · <span style="color:var(--text)">${redRP} RP</span>`:''}</div>
             <div class="stat-value" style="color:#ff8a94;font-size:2.2rem">${m.scoreRedFinal}</div>
             <div style="font-size:.72rem;font-family:var(--mono);color:var(--text2);margin-top:.3rem">
-              Auto: ${m.scoreRedAuto??'?'} · Foul: ${m.scoreRedFoul??0}
+              Auto: ${m.scoreRedAuto??'?'} · Foul pts committed: ${m.scoreRedFoul??0}
             </div>
             ${sc?rpBadge(sc.red, m.redWins):''}
-            ${m.redWins?'<div style="font-size:.75rem;color:var(--green);font-weight:800;margin-top:.25rem">✓ WINNER</div>':''}
+            ${m.redWins?'<div style="font-size:.75rem;color:var(--green);font-weight:600;margin-top:.25rem">Winner</div>':''}
           </div>
           <div class="stat-box" style="border-color:rgba(71,200,255,.3)">
-            <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent2);font-family:var(--mono);margin-bottom:.3rem">Blue Alliance${blueRP!=null?` · <span style="color:var(--text)">${blueRP} RP</span>`:''}</div>
+            <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;color:var(--accent2);font-family:var(--mono);margin-bottom:.3rem">Blue Alliance${blueRP!=null?` · <span style="color:var(--text)">${blueRP} RP</span>`:''}</div>
             <div class="stat-value" style="color:var(--accent2);font-size:2.2rem">${m.scoreBlueFinal}</div>
             <div style="font-size:.72rem;font-family:var(--mono);color:var(--text2);margin-top:.3rem">
-              Auto: ${m.scoreBlueAuto??'?'} · Foul: ${m.scoreBlueFoul??0}
+              Auto: ${m.scoreBlueAuto??'?'} · Foul pts committed: ${m.scoreBlueFoul??0}
             </div>
             ${sc?rpBadge(sc.blue, m.blueWins):''}
-            ${m.blueWins?'<div style="font-size:.75rem;color:var(--green);font-weight:800;margin-top:.25rem">✓ WINNER</div>':''}
+            ${m.blueWins?'<div style="font-size:.75rem;color:var(--green);font-weight:600;margin-top:.25rem">Winner</div>':''}
           </div>
-        </div>` : `
+        </div>
+        ${Number(appSettings.active_season) === 2026
+          ? officialScore
+            ? renderBioBuzzMatchScoring(officialScore, m)
+            : renderBioBuzzScoutingSummary(sc)
+          : ''}` : `
         <div class="card" style="text-align:center;margin-bottom:1rem">
           <div style="font-size:.85rem;color:var(--text2);font-family:var(--mono)">Scheduled: ${formatTime(m.startTime)}</div>
           ${fieldNum?`<div style="font-size:.75rem;color:var(--accent2);margin-top:.25rem">${fieldNum}</div>`:''}
@@ -284,6 +304,7 @@ function openMatchDetail(matchNumber) {
 
         <div id="md-advanced"></div>
 
+        ${videoUrl ? `<div style="margin-top:.75rem;font-size:.75rem"><a href="${escHtml(videoUrl)}" target="_blank" rel="noopener noreferrer">Watch match video ↗</a></div>` : ''}
         ${m.actualStartTime?`<div style="margin-top:.75rem;font-size:.68rem;font-family:var(--mono);color:var(--text3)">
           Started: ${new Date(m.actualStartTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
           ${m.postResultTime?` · Posted: ${new Date(m.postResultTime).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`:''}

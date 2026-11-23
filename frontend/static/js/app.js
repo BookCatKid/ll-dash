@@ -847,29 +847,39 @@ function setActiveTab(id){
 // Used in dashboard and schedule
 const matchSubStatsStyle=`display:flex;gap:.4rem;flex-wrap:wrap;font-size:.67rem;font-family:var(--mono);color:var(--text2);margin-top:.3rem`;
 
-// Normalize alliance RP flags (accept both FTC API and FTCScout field name variants).
-function allianceRPFlags(a) {
-  if (!a) return {movement:false, goal:false, pattern:false};
-  return {
-    movement: !!(a.movementRp ?? a.movementRankingPoint ?? a.MovementRp),
-    goal:     !!(a.goalRp     ?? a.goalRankingPoint     ?? a.GoalRp),
-    pattern:  !!(a.patternRp  ?? a.patternRankingPoint  ?? a.PatternRp),
-  };
+// Each season has its own scoring schema, including the ranking-point bonuses.
+// Field aliases account for FTCScout's camelCase and FIRST's RP spelling.
+function rankingPointBonuses(season = appSettings.active_season) {
+  if (Number(season) === 2026) {
+    return [
+      {key: 'swarm', label: 'Swarm', fields: ['swarmRp', 'swarmRP']},
+      {key: 'pollinator1', label: 'Pollinator 1', fields: ['pollinator1Rp', 'pollinator1RP']},
+      {key: 'pollinator2', label: 'Pollinator 2', fields: ['pollinator2Rp', 'pollinator2RP']},
+    ];
+  }
+  if (Number(season) === 2025) {
+    return [
+      {key: 'movement', label: 'Movement', fields: ['movementRp', 'movementRP', 'movementRankingPoint', 'MovementRp']},
+      {key: 'goal', label: 'Goal', fields: ['goalRp', 'goalRP', 'goalRankingPoint', 'GoalRp']},
+      {key: 'pattern', label: 'Pattern', fields: ['patternRp', 'patternRP', 'patternRankingPoint', 'PatternRp']},
+    ];
+  }
+  return [];
 }
 
-// Compute ranking points for an alliance in a qualification match.
-// In FTC 2025 (Decode): movementRp + goalRp + patternRp (each +1) + 3 for win / 1 for tie
-// `a` is an alliance object from the FTC /scores endpoint; `isWinner`/`isTie` describe match outcome.
-function computeMatchRP(a, isWinner, isTie) {
-  if (!a) return 0;
-  const f = allianceRPFlags(a);
-  let rp = 0;
-  if (f.movement) rp += 1;
-  if (f.goal)     rp += 1;
-  if (f.pattern)  rp += 1;
-  if (isWinner) rp += 3;
-  else if (isTie) rp += 1;
-  return rp;
+function allianceRPFlags(alliance) {
+  const flags = {};
+  for (const bonus of rankingPointBonuses()) {
+    flags[bonus.key] = bonus.fields.some(field => Boolean(alliance?.[field]));
+  }
+  return flags;
+}
+
+// Qualification ranking points: 3 for a win, 1 for a tie, plus earned bonuses.
+function computeMatchRP(alliance, isWinner, isTie) {
+  if (!alliance) return 0;
+  const bonusPoints = Object.values(allianceRPFlags(alliance)).filter(Boolean).length;
+  return (isWinner ? 3 : isTie ? 1 : 0) + bonusPoints;
 }
 
 // Red/blue paired stat chip helpers (used in sub-stats rows across pages)

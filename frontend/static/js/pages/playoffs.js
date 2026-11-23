@@ -347,13 +347,13 @@ function _bkFinalsCard(finals, rosters) {
   }).join('');
   const champ = finals.championA != null ? `
     <div class="bk-champion">🏆 Alliance ${finals.championA} — ${_rosterTeams(rosters, finals.championA)}</div>` : '';
-  const subtitle = finals.bestOf3 ? 'best of 3 — first alliance to 2 wins' : 'lower-bracket alliance must win twice';
+  const subtitle = finals.bestOf3 ? 'best of 3, first to 2 wins' : 'lower-bracket alliance must win twice';
   const fav = finals.championA == null
     ? _bkFavLine(_bkPred(finals.redA, finals.blueA, finals.games[finals.games.length - 1], rosters), finals.redA, finals.blueA, rosters)
     : '';
   return `
     <div class="bk-match bk-finals">
-      <div class="bk-match-head"><span>FINALS</span><span class="bk-dest">${subtitle}</span></div>
+      <div class="bk-match-head"><span>Finals</span><span class="bk-dest">${subtitle}</span></div>
       ${_bkSide('red',  finals.redA,  finals.redLabel,  null, finals.championA != null && finals.championA === finals.redA,  finals.championA != null, rosters)}
       ${_bkSide('blue', finals.blueA, finals.blueLabel, null, finals.championA != null && finals.championA === finals.blueA, finals.championA != null, rosters)}
       ${gameRows ? `<div class="bk-final-games">${gameRows}</div>` : ''}
@@ -484,7 +484,7 @@ async function playoffs() {
       <div class="page-title" style="margin-bottom:0">Playoffs</div>
       <button class="icon-btn" onclick="playoffs()" title="Reload">↻</button>
     </div>
-    <div style="font-size:.73rem;font-family:var(--mono);color:var(--text2);margin-bottom:.75rem">${escHtml(appSettings.active_event_name || '')} · ${alliances.length === 2 ? 'finals — best of 3' : 'double elimination'}</div>
+    <div style="font-size:.73rem;font-family:var(--mono);color:var(--text2);margin-bottom:.75rem">${escHtml(appSettings.active_event_name || '')} · ${alliances.length === 2 ? 'finals, best of 3' : 'double elimination'}</div>
     ${allianceHtml}
     ${bodyHtml}
   `);
