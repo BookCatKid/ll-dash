@@ -1,5 +1,6 @@
 <script>
   import Icon from './Icon.svelte';
+  import BrandMark from './BrandMark.svelte';
   import { api } from '../lib/api.js';
   let { settings, onAuthenticated } = $props();
   let digits = $state('');
@@ -41,7 +42,7 @@
 
 <div class="pin-gate">
   <div class="pin-card">
-    <div class="pin-logo">{settings.dashboard_name || 'LL Dash'}</div>
+    <BrandMark name={settings.dashboard_name || 'LL Dash'} />
     {#if settings.team_number}<div class="pin-sub">Team {settings.team_number}</div>{/if}
     <div class="pin-dots">
       {#each [0, 1, 2, 3] as i}<span class:filled={i < digits.length}></span>{/each}

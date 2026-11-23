@@ -3,12 +3,14 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import EventPicker from './EventPicker.svelte';
+  import SecretInput from './SecretInput.svelte';
+  import ThemePresetPicker from './ThemePresetPicker.svelte';
   import Icon from './Icon.svelte';
   import SettingSwitch from './SettingSwitch.svelte';
   import PageVisibilitySettings from './PageVisibilitySettings.svelte';
   import ConfigListRow from './ConfigListRow.svelte';
   import { api } from '../lib/api.js';
-  import { applyAppearance, initialTheme, themePresets } from '../lib/theme.js';
+  import { applyAppearance, initialTheme } from '../lib/theme.js';
   import { pages, readDeviceHiddenPages, writeDeviceHiddenPages } from '../lib/nav.js';
 
   let { settings, onSaved, onClose, notify } = $props();
@@ -277,25 +279,12 @@
   </div>
   <div class="setting-group">
     <span class="setting-label">Theme</span>
-    <div class="preset-row">
-      {#each themePresets as preset (preset.name)}
-        <button
-          class="preset-chip"
-          title={preset.name}
-          style:background={preset.bg}
-          style:border-color={preset.accent}
-          onclick={() => choosePreset(preset)}
-        >
-          <span class="preset-dot" style:background={preset.accent}></span><span
-            class="preset-dot"
-            style:background={preset.accent2}
-          ></span>
-          <span class="preset-name" style:color={preset.mode === 'light' ? '#222' : '#eee'}>
-            {preset.name}
-          </span>
-        </button>
-      {/each}
-    </div>
+    <ThemePresetPicker
+      accent={theme.accent}
+      accent2={theme.accent2}
+      bg={theme.bg}
+      onSelect={choosePreset}
+    />
   </div>
   <div class="setting-group">
     <span class="setting-label">Colors</span>
@@ -589,16 +578,19 @@
       inputmode="numeric"
     />
   </div>
-  <div class="setting-group">
-    <label class="setting-label" for="team-pin">Change PIN</label><input
-      class="setting-input"
-      id="team-pin"
-      bind:value={teamPin}
-      inputmode="numeric"
-      maxlength="4"
-      placeholder="4 digits"
-    />
-  </div>
+  <SecretInput
+    id="team-pin"
+    label="Change PIN"
+    value={teamPin}
+    inputClass="setting-input"
+    labelClass="setting-label"
+    inputmode="numeric"
+    maxlength={4}
+    autocomplete="new-password"
+    placeholder="4 digits"
+    normalize={(value) => value.replace(/\D/g, '').slice(0, 4)}
+    onChange={(value) => (teamPin = value)}
+  />
   <div class="setting-group">
     <label class="setting-label" for="api-username">FTC Events API username</label><input
       class="setting-input"
@@ -606,15 +598,15 @@
       bind:value={username}
     />
   </div>
-  <div class="setting-group">
-    <label class="setting-label" for="api-key">FTC Events API key</label><input
-      class="setting-input"
-      id="api-key"
-      type="password"
-      bind:value={apiKey}
-      placeholder={settings.has_credentials ? 'Saved' : 'API key'}
-    />
-  </div>
+  <SecretInput
+    id="api-key"
+    label="FTC Events API key"
+    value={apiKey}
+    inputClass="setting-input"
+    labelClass="setting-label"
+    placeholder={settings.has_credentials ? 'Saved' : 'API key'}
+    onChange={(value) => (apiKey = value)}
+  />
   {#if status}<div class="setting-hint">{status}</div>{/if}
   <div style="display:flex;gap:.5rem">
     <button class="btn btn-secondary" onclick={testCredentials}>Test API</button><button

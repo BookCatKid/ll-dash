@@ -74,6 +74,8 @@ def complete_setup():
         v = str(d.get(tkey, '')).strip()
         if re.fullmatch(r'#[0-9a-fA-F]{6}', v):
             AppSettings.set(tkey, v)
+    if d.get('theme_mode') in config.THEME_MODES:
+        AppSettings.set('theme_mode', d['theme_mode'])
 
     season = d.get('active_season') or check.get('currentSeason')
     if season:

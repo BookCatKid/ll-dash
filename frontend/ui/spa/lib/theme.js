@@ -1,5 +1,14 @@
 export const initialTheme = { accent: '#a8b8e8', accent2: '#9bc6c7', bg: '#151820' };
 
+/** Determine whether a custom background needs the light-color text palette. */
+export function isLightBackground(hex) {
+  if (typeof hex !== 'string' || !/^#[0-9a-fA-F]{6}$/.test(hex)) return false;
+  const red = parseInt(hex.slice(1, 3), 16);
+  const green = parseInt(hex.slice(3, 5), 16);
+  const blue = parseInt(hex.slice(5, 7), 16);
+  return red * 0.299 + green * 0.587 + blue * 0.114 > 160;
+}
+
 function shade(hex, amount) {
   const digits = hex.replace('#', '');
   const value = parseInt(digits, 16);
