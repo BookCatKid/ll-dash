@@ -41,8 +41,15 @@ def setup_validate():
     if not _setup_allowed():
         return jsonify({'error': 'Unauthorized'}), 401
     d = request.get_json() or {}
-    return jsonify(ftc_api.validate_credentials(
-        str(d.get('username', '')).strip(), str(d.get('key', '')).strip()))
+    username = str(d.get('username', '')).strip()
+    key = str(d.get('key', '')).strip()
+    result = ftc_api.validate_credentials(username, key)
+    if result.get('valid'):
+        # Persist immediately: later wizard steps (event picker) need working
+        # FTC credentials before complete_setup runs.
+        AppSettings.set('ftc_api_username', username)
+        AppSettings.set('ftc_api_key', key)
+    return jsonify(result)
 
 @api_bp.route('/setup', methods=['POST'])
 def complete_setup():
