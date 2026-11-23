@@ -1,8 +1,8 @@
 <script>
-  import {fly} from 'svelte/transition';
-  import {prefersReducedMotion} from 'svelte/motion';
+  import { fly } from 'svelte/transition';
+  import { prefersReducedMotion } from 'svelte/motion';
 
-  let {message} = $props();
+  let { message } = $props();
   const reduceMotion = prefersReducedMotion;
 </script>
 
@@ -11,8 +11,8 @@
     class="toast"
     role="status"
     aria-live="polite"
-    in:fly={{y: 8, duration: reduceMotion.current ? 0 : 190}}
-    out:fly={{y: 8, duration: reduceMotion.current ? 0 : 150}}
+    in:fly={{ y: 8, duration: reduceMotion.current ? 0 : 190 }}
+    out:fly={{ y: 8, duration: reduceMotion.current ? 0 : 150 }}
   >
     {$message}
   </div>

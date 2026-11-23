@@ -1,7 +1,7 @@
 <script>
-  import {onMount, tick} from 'svelte';
+  import { onMount, tick } from 'svelte';
 
-  let {items, activePage, onNavigate} = $props();
+  let { items, activePage, onNavigate } = $props();
   let dock;
   let indicator = $state(null);
   let indicatorReady = $state(false);
@@ -14,11 +14,11 @@
       return;
     }
 
-    indicator = {left: selected.offsetLeft, width: selected.offsetWidth};
+    indicator = { left: selected.offsetLeft, width: selected.offsetWidth };
     if (dock.scrollWidth > dock.clientWidth) {
       const target = selected.offsetLeft - (dock.clientWidth - selected.offsetWidth) / 2;
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      dock.scrollTo({left: target, behavior: reduceMotion ? 'instant' : 'smooth'});
+      dock.scrollTo({ left: target, behavior: reduceMotion ? 'instant' : 'smooth' });
     }
     indicatorReady = true;
   }

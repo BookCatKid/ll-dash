@@ -433,7 +433,7 @@ html.light .bottom-nav {
     align-items:flex-end;
     justify-content:center;
 }
-.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.32)}
 .modal-sheet {
     position:relative;
     width:min(100%,720px);
@@ -1373,4 +1373,69 @@ html.light .opr-cmp-r{color:#c4313f}
     .segmented-indicator.ready {
         transition: none;
     }
+}
+
+/* Svelte application shell and native dialogs */
+.svelte-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto auto 0;
+    width: min(100%, 720px);
+    max-width: 100%;
+    max-height: min(90dvh, 920px);
+    padding: 0;
+    overflow: auto;
+    color: var(--text);
+    background: var(--bg2);
+    border: 1px solid var(--bhi);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -8px 30px rgba(0,0,0,.16);
+}
+.svelte-dialog::backdrop {background: rgba(0,0,0,.3);}
+.svelte-dialog[open] {animation: svelte-sheet-in .16s ease-out;}
+@keyframes svelte-sheet-in {
+    from {transform: translateY(12px); opacity: .96;}
+    to {transform: translateY(0); opacity: 1;}
+}
+@media (min-width: 700px) {
+    .svelte-dialog {margin: auto; border-radius: 20px; max-height: 86dvh;}
+}
+@media (prefers-reduced-motion: reduce) {
+    .svelte-dialog[open] {animation: none;}
+}
+.svelte-shell .topbar {box-sizing: border-box;}
+.svelte-shell .page-container {min-height: calc(100dvh - 160px);}
+.svelte-shell .match-row {width: 100%;}
+.svelte-shell .team-chip {cursor: pointer;}
+.svelte-shell .match-vs {padding-inline: .15rem; color: var(--text3);}
+.svelte-shell .svelte-error {padding: .75rem 1rem; color: var(--red);}
+
+/* Match detail: roster and event rankings */
+.md-team-row {
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    padding: .5rem 0;
+    border-bottom: 1px solid var(--border);
+}
+.md-team-detail {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+    gap: .1rem;
+    text-align: left;
+}
+.md-team-detail span, .md-team-ranking {
+    font-size: .7rem;
+    color: var(--text2);
+}
+.md-team-ranking {
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+    align-items: flex-end;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
 }

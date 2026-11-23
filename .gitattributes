@@ -1,0 +1,2 @@
+
+frontend/static/build/*.js -whitespace linguist-generated=true

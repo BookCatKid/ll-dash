@@ -1,12 +1,9 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" class="{{ 'light' if brand.theme_mode == 'light' else '' }} {{ 'compact' if brand.density == 'compact' else '' }}">
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
   <meta name="theme-color" content="{{ brand.theme.bg }}"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="{{ brand.name }}"/>
   <title>{{ brand.name }}</title>
   <link rel="manifest" href="/manifest.json"/>
   <link rel="apple-touch-icon" href="/static/icons/icon-192.png"/>
@@ -14,90 +11,7 @@
   <style>:root{--accent:{{ brand.theme.accent }};--accent2:{{ brand.theme.accent2 }};--bg:{{ brand.theme.bg }};--bg2:{{ brand.theme.bg2 }};--bg3:{{ brand.theme.bg3 }}}</style>
 </head>
 <body>
-
-<!-- Setup Wizard (first run) -->
-<div id="setup-wizard" class="hidden"></div>
-
-<!-- PIN Gate -->
-<div id="pin-gate" class="pin-gate hidden">
-  <div class="pin-card">
-    <div class="pin-logo" id="pin-logo">{{ brand.name_first }}{% if brand.name_rest %} <span>{{ brand.name_rest }}</span>{% endif %}</div>
-    <p class="pin-sub" id="pin-sub">{% if brand.team_number %}Team {{ brand.team_number }}{% endif %}</p>
-    <div class="pin-dots" id="pin-dots">
-      <span></span><span></span><span></span><span></span>
-    </div>
-    <div class="pin-error" id="pin-error"></div>
-    <div class="pin-keypad">
-      <button class="key" data-key="1">1</button>
-      <button class="key" data-key="2">2</button>
-      <button class="key" data-key="3">3</button>
-      <button class="key" data-key="4">4</button>
-      <button class="key" data-key="5">5</button>
-      <button class="key" data-key="6">6</button>
-      <button class="key" data-key="7">7</button>
-      <button class="key" data-key="8">8</button>
-      <button class="key" data-key="9">9</button>
-      <button class="key key-clear" data-key="clear" aria-label="Delete last digit"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/delete.svg')"></span></button>
-      <button class="key" data-key="0">0</button>
-      <button class="key key-enter" data-key="enter" aria-label="Enter PIN"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/arrow-right.svg')"></span></button>
-    </div>
-    <footer class="attribution">Event data provided by <a href="https://frc-events.firstinspires.org/services/API" target="_blank" rel="noopener">FIRST<sup>®</sup> Events API</a></footer>
-  </div>
-</div>
-
-<!-- App -->
-<div id="app" class="app hidden">
-  <header class="topbar">
-    <div class="topbar-left">
-      <span class="topbar-logo" id="topbar-logo">{{ brand.name_first }}{% if brand.name_rest %} <span>{{ brand.name_rest }}</span>{% endif %}</span>
-      <span class="topbar-event" id="topbar-event">No Event</span>
-    </div>
-    <div class="topbar-right">
-      <button class="icon-btn" id="refresh-btn" type="button" title="Refresh page" aria-label="Refresh page"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/refresh-cw.svg')"></span></button>
-      <button class="icon-btn" id="settings-btn" type="button" title="Settings" aria-label="Settings"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/settings.svg')"></span></button>
-    </div>
-  </header>
-
-  <main class="page-container" id="page-container"></main>
-
-  <footer class="attribution app-attribution">Event data provided by <a href="https://frc-events.firstinspires.org/services/API" target="_blank" rel="noopener">FIRST<sup>®</sup> Events API</a></footer>
-
-  <!-- Built by buildNav() from the configured page order/visibility -->
-  <div id="nav-host"></div>
-</div>
-
-<!-- Settings Sheet -->
-<div id="settings-modal" class="modal hidden">
-  <div class="modal-backdrop" id="settings-backdrop"></div>
-  <div class="modal-sheet">
-    <div class="modal-header">
-      <span class="modal-title">Settings</span>
-      <button class="modal-close" id="settings-close" type="button" title="Close" aria-label="Close"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/x.svg')"></span></button>
-    </div>
-    <div class="modal-body">
-      <div id="settings-tabs"></div>
-      <div id="settings-content"></div>
-      <button class="btn btn-danger" id="logout-btn" style="margin-top:1.25rem"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/lock-keyhole.svg')"></span>Lock app</button>
-    </div>
-  </div>
-</div>
-
-<div id="toast-host"></div>
-
-<script src="/static/js/api.js"></script>
-<script src="/static/js/setup.js"></script>
-<script src="/static/js/pages/dashboard.js"></script>
-<script src="/static/js/pages/match-scoring.js"></script>
-<script src="/static/js/pages/schedule.js"></script>
-<script src="/static/js/pages/rankings.js"></script>
-<script src="/static/js/pages/scouting.js"></script>
-<script src="/static/js/pages/alliance.js"></script>
-<script src="/static/js/pages/simulator.js"></script>
-<script src="/static/js/pages/hub.js"></script>
-<script src="/static/js/pages/bigscreen.js"></script>
-<script src="/static/js/pages/playoffs.js"></script>
-<script src="/static/js/pages/awards.js"></script>
-<script src="/static/build/ui.js"></script>
-<script src="/static/js/app.js"></script>
+  <div id="svelte-root"></div>
+  <script src="/static/build/app.js"></script>
 </body>
 </html>

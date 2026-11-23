@@ -1,7 +1,7 @@
 <script>
-  import {onMount, tick} from 'svelte';
+  import { onMount, tick } from 'svelte';
 
-  let {items, activeTab, onSelect, extraClass = ''} = $props();
+  let { items, activeTab, onSelect, extraClass = '' } = $props();
   let container;
   let indicator = $state(null);
   let indicatorReady = $state(false);
@@ -14,13 +14,13 @@
       return;
     }
 
-    indicator = {left: selected.offsetLeft, width: selected.offsetWidth};
+    indicator = { left: selected.offsetLeft, width: selected.offsetWidth };
     indicatorReady = true;
 
     if (container.scrollWidth > container.clientWidth) {
       const target = selected.offsetLeft - (container.clientWidth - selected.offsetWidth) / 2;
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      container.scrollTo({left: target, behavior: reduceMotion ? 'instant' : 'smooth'});
+      container.scrollTo({ left: target, behavior: reduceMotion ? 'instant' : 'smooth' });
     }
   }
 
@@ -59,6 +59,8 @@
       data-tab={item.key}
       aria-selected={$activeTab === item.key}
       onclick={() => onSelect(item.key)}
-    >{item.label}</button>
+    >
+      {item.label}
+    </button>
   {/each}
 </div>

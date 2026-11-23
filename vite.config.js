@@ -1,5 +1,5 @@
-import {defineConfig} from 'vite';
-import {svelte} from '@sveltejs/vite-plugin-svelte';
+import { defineConfig } from 'vite';
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 
 export default defineConfig({
   plugins: [svelte()],
@@ -7,11 +7,11 @@ export default defineConfig({
     outDir: 'frontend/static/build',
     emptyOutDir: true,
     lib: {
-      entry: 'frontend/ui/main.js',
-      name: 'LLDashUI',
+      entry: 'frontend/ui/spa/main.js',
+      name: 'LLDashApp',
       formats: ['iife'],
-      fileName: () => 'ui.js',
-      cssFileName: 'ui',
+      fileName: () => 'app.js',
+      cssFileName: 'app',
     },
   },
 });

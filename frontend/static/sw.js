@@ -1,15 +1,14 @@
-const CACHE = 'ftcdash-v18';
-const STATIC = ['/static/build/ui.js','/static/css/app.css','/static/js/api.js','/static/js/app.js','/static/js/setup.js',
-  '/static/js/pages/dashboard.js','/static/js/pages/match-scoring.js',
-  '/static/js/pages/schedule.js','/static/js/pages/rankings.js',
-  '/static/js/pages/scouting.js','/static/js/pages/alliance.js','/static/js/pages/simulator.js',
-  '/static/js/pages/hub.js','/static/js/pages/bigscreen.js','/static/js/pages/playoffs.js',
-  '/static/js/pages/awards.js',
-  ...['layout-dashboard','calendar-days','chart-no-axes-column','clipboard-list','users',
-      'chart-line','notebook-tabs','monitor','trophy','medal',
-      'refresh-cw','settings','x','trash-2','arrow-up','arrow-down',
-      'lock-keyhole','download','rotate-ccw','plus','delete','arrow-right']
-    .map(icon => `/static/icons/nav/${icon}.svg`)];
+const CACHE = 'ftcdash-v20';
+const STATIC = [
+  '/static/build/app.js',
+  '/static/css/app.css',
+  ...[
+    'layout-dashboard','calendar-days','chart-no-axes-column','clipboard-list','users',
+    'chart-line','notebook-tabs','monitor','trophy','medal',
+    'refresh-cw','settings','x','trash-2','arrow-up','arrow-down',
+    'lock-keyhole','download','rotate-ccw','plus','delete','arrow-right',
+  ].map(icon => `/static/icons/nav/${icon}.svg`),
+];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(STATIC)).then(()=>self.skipWaiting()));
@@ -34,8 +33,26 @@ self.addEventListener('fetch', e => {
     );
     return;
   }
+  // Compiled JS and CSS change between releases; prefer the deployed version.
+  // Keep the cached copy for offline fallback rather than pinning a stale UI.
+  if (url.pathname === '/static/build/app.js' || url.pathname === '/static/css/app.css') {
+    e.respondWith(fetch(e.request).then(res => {
+      if (res.ok) {
+        const copy = res.clone();
+        void caches.open(CACHE).then(cache => cache.put(e.request, copy));
+      }
+      return res;
+    }).catch(() => caches.match(e.request)));
+    return;
+  }
   e.respondWith(caches.match(e.request).then(cached => {
     if (cached) return cached;
-    return fetch(e.request).then(res => { if(res.ok){const c=res.clone();caches.open(CACHE).then(ca=>ca.put(e.request,c));} return res; });
+    return fetch(e.request).then(res => {
+      if (res.ok) {
+        const copy = res.clone();
+        void caches.open(CACHE).then(cache => cache.put(e.request, copy));
+      }
+      return res;
+    });
   }));
 });

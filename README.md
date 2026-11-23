@@ -41,7 +41,7 @@ scouting workflow**. No code changes required.
 
 ## Stack
 
-Flask + PostgreSQL backend, vanilla-JS single-page frontend. No build step.
+Flask + PostgreSQL backend, Svelte 5 frontend compiled with Vite. The generated bundle is checked in; production only needs Python.
 
 ## Deploy to Render (recommended)
 
@@ -80,12 +80,10 @@ The first visit launches the setup wizard, same as production.
 
 ## Frontend components
 
-The navigation dock, segmented controls, and notifications are Svelte 5
-components in `frontend/ui/`. Dialogs share an animated controller in
-`frontend/ui/dialogs.js` for closing, focus handling, and reduced motion.
-Flask serves the compiled JavaScript directly
-from `frontend/static/build/`, so the deployed Python service does not require
-Node.js.
+Every application screen, dialog, and control is implemented in Svelte 5 under
+`frontend/ui/`. Flask serves the checked-in compiled bundle from
+`frontend/static/build/app.js`. Node.js is required for development and
+building the frontend, but not for running the deployed Flask service.
 
 After editing Svelte components, rebuild the checked-in asset:
 
