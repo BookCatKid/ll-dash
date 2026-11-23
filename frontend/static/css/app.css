@@ -1973,8 +1973,10 @@ html.light .opr-cmp-r{color:#c4313f}
 }
 :where(
     .icon-btn, .modal-close, .stat-box-link, .flag-btn,
-    .sim-rp-btn, .sim-auto-btn, .opr-scope-btn, .team-chip:is(button), .match-card
+    .sim-rp-btn, .sim-auto-btn, .opr-scope-btn, .team-chip:is(button)
 ):active { transform: scale(.975); }
+.match-alliance-panel { transition: transform .12s ease, background-color .12s ease; }
+.match-alliance-panel:active { transform: scale(.985); }
 :where(
     .team-chip:is(button), .team-identity-name:is(button), .flag-btn,
     .sim-rp-btn, .sim-auto-btn, .opr-scope-btn, .match-card
@@ -1990,7 +1992,7 @@ html.light .opr-cmp-r{color:#c4313f}
     ) { transition: none; }
     :where(
         .icon-btn, .modal-close, .stat-box-link, .flag-btn, .sim-rp-btn,
-        .sim-auto-btn, .opr-scope-btn, .team-chip:is(button), .match-card
+        .sim-auto-btn, .opr-scope-btn, .team-chip:is(button)
     ):active { transform: none; }
 }
 

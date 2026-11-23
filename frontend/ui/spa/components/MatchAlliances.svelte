@@ -38,6 +38,21 @@
             class="match-alliance-member"
             class:our-team={Number(team.teamNumber) === Number(teamNumber)}
             class:compact
+            role="button"
+            tabindex="0"
+            title="Open team {team.teamNumber}"
+            onclick={(event) => {
+              event.stopPropagation();
+              onTeam?.(team.teamNumber);
+            }}
+            onkeydown={(event) => {
+              if (event.target !== event.currentTarget) return;
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                event.stopPropagation();
+                onTeam?.(team.teamNumber);
+              }
+            }}
           >
             <TeamIdentity
               {team}
