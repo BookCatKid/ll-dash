@@ -1893,3 +1893,35 @@ html.light .opr-cmp-r{color:#c4313f}
 
 .settings-choice-tabs { margin-bottom: .5rem; }
 .settings-choice-tabs .tab { flex: 1; }
+
+/* Shared field/category editor rows use the same actions, rhythm, and inputs. */
+.settings-config-list { display: flex; flex-direction: column; gap: .5rem; margin-bottom: .8rem; }
+.settings-config-list .cfg-row { margin: 0; }
+.cfg-row-actions { display: flex; align-items: center; gap: .5rem; margin-top: .5rem; }
+.cfg-row-secondary { flex: 1; min-width: 0; }
+.cfg-row-secondary .setting-switch-row { padding: 0; min-height: 36px; }
+.cfg-row-secondary .setting-switch-label { font-size: .75rem; }
+.cfg-row-buttons { display: flex; gap: .35rem; margin-left: auto; }
+.cfg-row-buttons .cfg-mini { width: 34px; height: 34px; flex-shrink: 0; }
+.cfg-options-input { margin-top: .5rem; }
+.cfg-color-input {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg3);
+    padding: 3px;
+    cursor: pointer;
+}
+.cfg-icon-field { display: flex; align-items: center; gap: .7rem; margin-top: .5rem; color: var(--text2); font-size: .78rem; }
+.cfg-icon-field .setting-input { flex: 1; min-width: 0; }
+.settings-config-footer { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+@media (max-width: 390px) {
+    .settings-config-list .cfg-row { padding: .6rem; }
+    .settings-config-list .cfg-row-main { flex-wrap: wrap; }
+    .settings-config-list .cfg-row-main .setting-select { width: 100%; }
+}
+
+/* Shared reorder controls for navigation, field schemas, and flags. */
+.cfg-reorder-buttons { display: inline-flex; align-items: center; gap: .25rem; }

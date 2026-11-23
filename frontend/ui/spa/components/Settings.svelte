@@ -5,9 +5,10 @@
   import Icon from './Icon.svelte';
   import SettingSwitch from './SettingSwitch.svelte';
   import PageVisibilitySettings from './PageVisibilitySettings.svelte';
+  import ConfigListRow from './ConfigListRow.svelte';
   import { api } from '../lib/api.js';
   import { applyAppearance, initialTheme, themePresets } from '../lib/theme.js';
-  import { pages } from '../lib/nav.js';
+  import { pages, readDeviceHiddenPages, writeDeviceHiddenPages } from '../lib/nav.js';
 
   let { settings, onSaved, onClose, notify } = $props();
   const copy = (value) => JSON.parse(JSON.stringify(value));
@@ -72,11 +73,7 @@
     teamNumber = String(settings.team_number || '');
     username = settings.ftc_api_username || '';
     let active = true;
-    try {
-      deviceHidden = JSON.parse(localStorage.getItem('device_hidden_tabs') || '[]');
-    } catch {
-      deviceHidden = [];
-    }
+    deviceHidden = readDeviceHiddenPages();
     Promise.all([
       api.seasons().catch(() => null),
       api.scoutingFields().catch(() => []),
@@ -217,8 +214,9 @@
   }
 
   function setDeviceVisibility(key, checked) {
-    deviceHidden = checked ? deviceHidden.filter((item) => item !== key) : [...deviceHidden, key];
-    localStorage.setItem('device_hidden_tabs', JSON.stringify(deviceHidden));
+    deviceHidden = writeDeviceHiddenPages(
+      checked ? deviceHidden.filter((item) => item !== key) : [...deviceHidden, key],
+    );
     onSaved({ ...settings });
   }
 
@@ -228,36 +226,50 @@
   }
 
   async function saveFields() {
+    if (saving) return;
+    saving = true;
     try {
       scoutingFields = await api.saveScoutingFields(scoutingFields);
       notify('Saved');
     } catch (error) {
       notify(error.message || 'Save failed');
+    } finally {
+      saving = false;
     }
   }
 
   async function saveFlags() {
+    if (saving) return;
+    saving = true;
     try {
       flagCategories = await api.saveFlagCategories(flagCategories);
       notify('Saved');
     } catch (error) {
       notify(error.message || 'Save failed');
+    } finally {
+      saving = false;
     }
   }
 
   async function saveCredentials() {
+    if (saving) return;
     const payload = {};
     if (teamNumber.trim()) payload.team_number = teamNumber.trim();
     if (teamPin.trim()) payload.team_pin = teamPin.trim();
     if (username.trim()) payload.ftc_api_username = username.trim();
     if (apiKey.trim()) payload.ftc_api_key = apiKey.trim();
-    await save(payload, {
-      team_number: Number(teamNumber),
-      ftc_api_username: username,
-      has_credentials: true,
+    if (!Object.keys(payload).length) return;
+
+    const saved = await save(payload, {
+      team_number: teamNumber.trim() ? Number(teamNumber) : settings.team_number,
+      ftc_api_username: username.trim() || settings.ftc_api_username,
+      has_credentials: settings.has_credentials || Boolean(username.trim() && apiKey.trim()),
     });
-    teamPin = '';
-    apiKey = '';
+    if (saved) {
+      // An earlier request must not erase edits made while it was in flight.
+      if (teamPin === payload.team_pin) teamPin = '';
+      if (apiKey === payload.ftc_api_key) apiKey = '';
+    }
   }
 
   async function testCredentials() {
@@ -475,109 +487,108 @@
   </section>
   <button class="btn btn-primary btn-block" disabled={saving} onclick={savePages}>Save</button>
 {:else if tab === 'scouting'}
-  {#each scoutingFields as field, index (index)}
-    <div class="cfg-row">
-      <div class="cfg-row-main">
-        <input class="setting-input" aria-label="Field label" bind:value={field.label} />
-        <select class="setting-select" aria-label="Field type" bind:value={field.type}>
-          {#each fieldTypes as type}<option value={type}>{type}</option>{/each}
-        </select>
-      </div>
-      {#if field.type === 'select'}<input
-          class="setting-input"
-          placeholder="Options separated by commas"
-          value={(field.options || []).join(', ')}
-          onchange={(event) =>
-            (field.options = event.currentTarget.value
-              .split(',')
-              .map((v) => v.trim())
-              .filter(Boolean))}
-        />{/if}
-      <div style="display:flex;align-items:center;gap:.5rem;margin-top:.35rem">
-        <label class="sf-req-label">
-          <input type="checkbox" bind:checked={field.required} />Required
-        </label><span style="flex:1"></span>
-        <button
-          class="icon-btn cfg-mini"
-          aria-label="Move up"
-          disabled={index === 0}
-          onclick={() => move(scoutingFields, index, -1)}
-        >
-          <Icon name="arrow-up" size={17} />
-        </button>
-        <button
-          class="icon-btn cfg-mini"
-          aria-label="Move down"
-          disabled={index === scoutingFields.length - 1}
-          onclick={() => move(scoutingFields, index, 1)}
-        >
-          <Icon name="arrow-down" size={17} />
-        </button>
-        <button
-          class="icon-btn cfg-mini"
-          aria-label="Remove field"
-          onclick={() => scoutingFields.splice(index, 1)}
-        >
-          <Icon name="trash-2" size={17} />
-        </button>
-      </div>
-    </div>
-  {/each}
-  <div style="display:flex;gap:.5rem">
+  <div class="settings-config-list">
+    {#each scoutingFields as field, index (field)}
+      <ConfigListRow
+        label={field.label || `Field ${index + 1}`}
+        {index}
+        total={scoutingFields.length}
+        onMove={(offset) => move(scoutingFields, index, offset)}
+        onRemove={() => scoutingFields.splice(index, 1)}
+      >
+        <div class="cfg-row-main">
+          <input
+            class="setting-input"
+            aria-label={`Name of field ${index + 1}`}
+            placeholder="Field name"
+            bind:value={field.label}
+          />
+          <select
+            class="setting-select"
+            aria-label={`Type of ${field.label || `field ${index + 1}`}`}
+            bind:value={field.type}
+          >
+            {#each fieldTypes as type}<option value={type}>{type}</option>{/each}
+          </select>
+        </div>
+        {#if field.type === 'select'}
+          <input
+            class="setting-input cfg-options-input"
+            aria-label={`Choices for ${field.label || `field ${index + 1}`}`}
+            placeholder="Options separated by commas"
+            value={(field.options || []).join(', ')}
+            onchange={(event) =>
+              (field.options = event.currentTarget.value
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean))}
+          />
+        {/if}
+        {#snippet secondary()}
+          <SettingSwitch
+            id={`field-required-${field.key || index}`}
+            label="Required"
+            checked={field.required}
+            onChange={(checked) => (field.required = checked)}
+          />
+        {/snippet}
+      </ConfigListRow>
+    {/each}
+  </div>
+  <div class="settings-config-footer">
     <button
+      type="button"
       class="btn btn-secondary"
       onclick={() => scoutingFields.push({ label: '', type: 'text', required: false })}
     >
       Add field
-    </button><button class="btn btn-primary" onclick={saveFields}>Save</button>
+    </button>
+    <button class="btn btn-primary" disabled={saving} onclick={saveFields}>Save</button>
   </div>
 {:else if tab === 'flags'}
-  {#each flagCategories as category, index (index)}
-    <div class="cfg-row">
-      <div class="cfg-row-main">
-        <input class="setting-input" aria-label="Category name" bind:value={category.label} /><input
-          type="color"
-          aria-label="Category color"
-          bind:value={category.color}
-        />
-      </div>
-      <div style="display:flex;gap:.5rem;margin-top:.5rem;align-items:center">
-        <label>
-          Icon <input class="setting-input" style="width:100px" bind:value={category.icon} />
-        </label><span style="flex:1"></span>
-        <button
-          class="icon-btn cfg-mini"
-          aria-label="Move up"
-          disabled={index === 0}
-          onclick={() => move(flagCategories, index, -1)}
-        >
-          <Icon name="arrow-up" size={17} />
-        </button>
-        <button
-          class="icon-btn cfg-mini"
-          aria-label="Move down"
-          disabled={index === flagCategories.length - 1}
-          onclick={() => move(flagCategories, index, 1)}
-        >
-          <Icon name="arrow-down" size={17} />
-        </button>
-        <button
-          class="icon-btn cfg-mini"
-          aria-label="Remove category"
-          onclick={() => flagCategories.splice(index, 1)}
-        >
-          <Icon name="trash-2" size={17} />
-        </button>
-      </div>
-    </div>
-  {/each}
-  <div style="display:flex;gap:.5rem">
+  <div class="settings-config-list">
+    {#each flagCategories as category, index (category)}
+      <ConfigListRow
+        label={category.label || `Category ${index + 1}`}
+        {index}
+        total={flagCategories.length}
+        onMove={(offset) => move(flagCategories, index, offset)}
+        onRemove={() => flagCategories.splice(index, 1)}
+      >
+        <div class="cfg-row-main">
+          <input
+            class="setting-input"
+            aria-label={`Name of category ${index + 1}`}
+            placeholder="Category name"
+            bind:value={category.label}
+          />
+          <input
+            class="cfg-color-input"
+            type="color"
+            aria-label={`Color of ${category.label || `category ${index + 1}`}`}
+            bind:value={category.color}
+          />
+        </div>
+        <label class="cfg-icon-field">
+          Icon
+          <input
+            class="setting-input"
+            aria-label={`Icon of ${category.label || `category ${index + 1}`}`}
+            bind:value={category.icon}
+          />
+        </label>
+      </ConfigListRow>
+    {/each}
+  </div>
+  <div class="settings-config-footer">
     <button
+      type="button"
       class="btn btn-secondary"
       onclick={() => flagCategories.push({ label: '', color: '#b6ade9', icon: '' })}
     >
       Add category
-    </button><button class="btn btn-primary" onclick={saveFlags}>Save</button>
+    </button>
+    <button class="btn btn-primary" disabled={saving} onclick={saveFlags}>Save</button>
   </div>
 {:else if tab === 'data'}
   <div class="setting-group">

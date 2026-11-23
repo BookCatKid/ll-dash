@@ -2,7 +2,7 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import SettingSwitch from './SettingSwitch.svelte';
-  import Icon from './Icon.svelte';
+  import ReorderButtons from './ReorderButtons.svelte';
   import { pages } from '../lib/nav.js';
 
   let { nav, deviceHidden, onMove, onSharedChange, onDeviceChange } = $props();
@@ -52,26 +52,12 @@
               onChange={(checked) => onSharedChange(item.key, checked)}
             />
             <div class="settings-page-reorder">
-              <button
-                type="button"
-                class="icon-btn cfg-mini"
-                aria-label={`Move ${page.label} up`}
-                title={`Move ${page.label} up`}
-                disabled={index === 0}
-                onclick={() => onMove(index, -1)}
-              >
-                <Icon name="arrow-up" size={16} />
-              </button>
-              <button
-                type="button"
-                class="icon-btn cfg-mini"
-                aria-label={`Move ${page.label} down`}
-                title={`Move ${page.label} down`}
-                disabled={index === nav.length - 1}
-                onclick={() => onMove(index, 1)}
-              >
-                <Icon name="arrow-down" size={16} />
-              </button>
+              <ReorderButtons
+                label={page.label}
+                {index}
+                total={nav.length}
+                onMove={(offset) => onMove(index, offset)}
+              />
             </div>
           </div>
         {/if}
