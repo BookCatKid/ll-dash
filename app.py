@@ -7,7 +7,13 @@ load_dotenv()
 
 
 def _database_url():
-    url = os.getenv('DATABASE_URL', 'postgresql://localhost/lldash')
+    url = os.getenv('DATABASE_URL')
+    if not url:
+        # Default: SQLite file next to app.py. Works on hosts with a
+        # persistent filesystem (PythonAnywhere, VMs); override with
+        # DATABASE_URL for Postgres or ephemeral-disk hosts.
+        url = 'sqlite:///' + os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), 'lldash.db')
     # Pin the driver explicitly: SQLAlchemy 2.1+ defaults postgresql:// to psycopg 3.
     for prefix in ('postgres://', 'postgresql://'):
         if url.startswith(prefix):
