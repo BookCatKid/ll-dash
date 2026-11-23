@@ -868,7 +868,7 @@ function teamChip(num,alliance){
 function teamChipNamed(t,alliance){
   const ours=t.teamNumber==TEAM_NUMBER?' our':'';
   const label=t.teamNumber==TEAM_NUMBER?`<strong>${t.teamNumber}</strong>`:t.teamNumber;
-  return `<span class="team-chip ${alliance}${ours} clickable-chip" data-team="${t.teamNumber}" title="${t.teamName||t.teamNumber}" style="${ours?'font-weight:800;border-width:2px':''}">${label}</span>`;
+  return `<span class="team-chip ${alliance}${ours} clickable-chip" data-team="${t.teamNumber}" title="${escHtml(t.teamName||t.teamNumber)}" style="${ours?'font-weight:800;border-width:2px':''}">${label}</span>`;
 }
 
 // Bind all .clickable-chip elements to open team modal

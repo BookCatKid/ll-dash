@@ -20,21 +20,36 @@ function matchScoreGroup(title, rows) {
   </section>`;
 }
 
-function matchScoreRobotStatus(alliance, firstField, secondField) {
-  return [firstField, secondField].map((field, index) => {
-    const result = alliance?.[field];
-    const state = result == null ? 'unknown' : result ? 'yes' : 'no';
-    const status = result == null ? 'Unknown' : result ? 'Yes' : 'No';
-    return `<span class="match-scoring-robot ${state}" title="Robot ${index + 1}">${index + 1}: ${status}</span>`;
-  }).join('');
+function matchScoreRobotValue(result) {
+  const status = result == null ? 'Unknown' : result ? 'Yes' : 'No';
+  const state = result == null ? 'unknown' : result ? 'yes' : 'no';
+  return `<span class="match-scoring-robot-result ${state}">${status}</span>`;
 }
 
-function matchScoreRobotRow(label, red, blue, firstField, secondField) {
-  return `<div class="match-scoring-row">
-    <span class="match-scoring-label">${escHtml(label)}</span>
-    <span class="match-scoring-red match-scoring-robots">${matchScoreRobotStatus(red, firstField, secondField)}</span>
-    <span class="match-scoring-blue match-scoring-robots">${matchScoreRobotStatus(blue, firstField, secondField)}</span>
-  </div>`;
+function matchScoreRobotActions(score, match) {
+  const rows = ['Red', 'Blue'].flatMap(side => [1, 2].map(stationNumber => {
+    const station = `${side}${stationNumber}`;
+    const team = match.teams?.find(entry => entry.station === station);
+    const alliance = side === 'Red' ? score.red : score.blue;
+    const name = team?.teamName || window._teamNames?.[team?.teamNumber] || '';
+    const identity = team?.teamNumber
+      ? `${teamChipNamed({...team, teamName: name}, side.toLowerCase())}
+        ${name ? `<span class="match-scoring-robot-name">${escHtml(name)}</span>` : ''}`
+      : 'Team unavailable';
+
+    return `<tr class="match-scoring-robot-row" data-station="${station}">
+      <th scope="row"><div class="match-scoring-robot-identity">${identity}</div></th>
+      <td>${matchScoreRobotValue(alliance?.[`autoRobot${stationNumber}Leave`])}</td>
+      <td>${matchScoreRobotValue(alliance?.[`autoRobot${stationNumber}Park`])}</td>
+      <td>${matchScoreRobotValue(alliance?.[`teleopRobot${stationNumber}Park`])}</td>
+    </tr>`;
+  }));
+
+  return `<table class="match-scoring-robot-table">
+    <colgroup><col class="match-scoring-robot-team-col"><col span="3"></colgroup>
+    <thead><tr><th scope="col">Team</th><th scope="col">Left wall</th><th scope="col">Auto park</th><th scope="col">TeleOp park</th></tr></thead>
+    <tbody>${rows.join('')}</tbody>
+  </table>`;
 }
 
 function matchScoreBonus(earned) {
@@ -110,11 +125,7 @@ function renderBioBuzzMatchScoring(score, match) {
     ]),
   ];
 
-  const robotActions = [
-    matchScoreRobotRow('Left wall in Auto', red, blue, 'autoRobot1Leave', 'autoRobot2Leave'),
-    matchScoreRobotRow('Parked in Auto', red, blue, 'autoRobot1Park', 'autoRobot2Park'),
-    matchScoreRobotRow('Parked in TeleOp', red, blue, 'teleopRobot1Park', 'teleopRobot2Park'),
-  ];
+  const robotActions = matchScoreRobotActions(score, match);
 
   const fieldActivity = [
     matchScoreRow('Auto hive tips', red.autoHiveTips, blue.autoHiveTips),
@@ -146,7 +157,7 @@ function renderBioBuzzMatchScoring(score, match) {
     ${phases.join('')}
     <details class="match-scoring-expand">
       <summary>Robot actions</summary>
-      <div class="match-scoring-expand-body">${robotActions.join('')}</div>
+      <div class="match-scoring-expand-body">${robotActions}</div>
     </details>
     <details class="match-scoring-expand">
       <summary>Hive and fouls</summary>

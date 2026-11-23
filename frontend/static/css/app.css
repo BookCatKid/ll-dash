@@ -1074,20 +1074,66 @@ html.light .opr-cmp-r{color:#c4313f}
     padding: .2rem 0 .7rem;
 }
 
-.match-scoring-robots {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: .15rem;
+.match-scoring-robot-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: .7rem;
 }
 
-.match-scoring-robot {
+.match-scoring-robot-team-col {
+    width: 42%;
+}
+
+.match-scoring-robot-table th,
+.match-scoring-robot-table td {
+    padding: .6rem .35rem;
+    text-align: center;
+    overflow-wrap: break-word;
+    border-bottom: 1px solid var(--border);
+}
+
+.match-scoring-robot-table thead th {
+    color: var(--text2);
+    font-size: .68rem;
+    font-weight: 500;
+}
+
+.match-scoring-robot-table tbody th {
+    padding-left: .75rem;
+    text-align: left;
+    font-weight: 500;
+}
+
+.match-scoring-robot-table tbody tr:last-child th,
+.match-scoring-robot-table tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.match-scoring-robot-row:nth-child(even) {
+    background: var(--bg3);
+}
+
+.match-scoring-robot-identity {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .2rem;
+    min-width: 0;
+}
+
+.match-scoring-robot-name {
+    color: var(--text2);
     font-size: .65rem;
-    white-space: nowrap;
+    font-weight: 400;
+    overflow-wrap: anywhere;
+}
+
+.match-scoring-robot-result {
     color: var(--text3);
 }
 
-.match-scoring-robot.yes {
+.match-scoring-robot-result.yes {
     color: var(--green);
 }
 
