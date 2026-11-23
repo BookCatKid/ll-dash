@@ -314,14 +314,13 @@ function openMatchDetail(matchNumber) {
       </div>
     </div>`;
   document.body.appendChild(modal);
+  window.LLDashUI.openDialog(modal, {removeOnClose: true});
   modal.addEventListener('click', event => {
     const chip = event.target.closest('.match-scoring-robot-row .clickable-chip');
     if (!chip) return;
     event.stopPropagation();
     openTeamModal(Number(chip.dataset.team));
   });
-  document.getElementById('md-back').addEventListener('click', ()=>modal.remove());
-  document.getElementById('md-close').addEventListener('click', ()=>modal.remove());
   if (appSettings.advanced_predictions !== false) _fillMatchAdvanced(m, red, blue);
 }
 

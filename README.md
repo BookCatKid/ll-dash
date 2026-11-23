@@ -81,7 +81,9 @@ The first visit launches the setup wizard, same as production.
 ## Frontend components
 
 The navigation dock, segmented controls, and notifications are Svelte 5
-components in `frontend/ui/`. Flask serves the compiled JavaScript directly
+components in `frontend/ui/`. Dialogs share an animated controller in
+`frontend/ui/dialogs.js` for closing, focus handling, and reduced motion.
+Flask serves the compiled JavaScript directly
 from `frontend/static/build/`, so the deployed Python service does not require
 Node.js.
 

@@ -522,9 +522,7 @@ html.light .bottom-nav {
     padding:.7rem 1rem;
     font-size:.8rem;
     box-shadow:0 8px 24px rgba(0,0,0,.18);
-    animation:toast-in .2s ease;
 }
-@keyframes toast-in{from{opacity:0;transform:translateX(-50%) translateY(8px)}}
 
 /* Page */
 .section-label {

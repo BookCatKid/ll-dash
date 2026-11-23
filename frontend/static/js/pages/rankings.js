@@ -171,9 +171,7 @@ async function openTeamModal(teamNum) {
       <div class="modal-body" id="tp-body"><div class="loading">Loading</div></div>
     </div>`;
   document.body.appendChild(modal);
-  const rm=()=>modal.remove();
-  document.getElementById('tp-back').addEventListener('click',rm);
-  document.getElementById('tp-close').addEventListener('click',rm);
+  window.LLDashUI.openDialog(modal, {removeOnClose: true});
 
   // Load in parallel: local data + FTCScout
   const season = appSettings.active_season || 2025;
@@ -340,7 +338,9 @@ async function openTeamModal(teamNum) {
       </div>`;
   }
 
-  document.getElementById('tp-body').innerHTML=`
+  const body = modal.querySelector('#tp-body');
+  if (!modal.isConnected || !body) return;
+  body.innerHTML=`
     <div style="margin-bottom:.75rem">
       <div style="font-size:1.1rem;font-weight:700">${rank?.teamName||window._teamNames?.[teamNum]||'Team '+teamNum}</div>
       <div style="font-size:.73rem;font-family:var(--mono);color:var(--text2)">#${teamNum} · <a href="https://ftcscout.org/teams/${teamNum}" target="_blank" style="color:var(--accent2)">FTCScout ↗</a></div>
@@ -375,7 +375,7 @@ async function openTeamModal(teamNum) {
     ${noteHtml}
     ${historyHtml}
     <button class="btn btn-secondary btn-block" style="margin-top:1rem" onclick="
-      document.querySelectorAll('.modal').forEach(el=>el.remove());
+      window.LLDashUI.closeAllDialogs(true);
       navigateTo('scouting');
       setTimeout(()=>{
         const inp=document.getElementById('sc-team');

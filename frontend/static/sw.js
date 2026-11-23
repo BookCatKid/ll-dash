@@ -1,4 +1,4 @@
-const CACHE = 'ftcdash-v17';
+const CACHE = 'ftcdash-v18';
 const STATIC = ['/static/build/ui.js','/static/css/app.css','/static/js/api.js','/static/js/app.js','/static/js/setup.js',
   '/static/js/pages/dashboard.js','/static/js/pages/match-scoring.js',
   '/static/js/pages/schedule.js','/static/js/pages/rankings.js',

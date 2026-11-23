@@ -3,6 +3,7 @@ import {writable} from 'svelte/store';
 import BottomNav from './components/BottomNav.svelte';
 import Toast from './components/Toast.svelte';
 import SegmentedTabs from './components/SegmentedTabs.svelte';
+export {openDialog, closeDialog, closeAllDialogs} from './dialogs.js';
 
 const items = writable([]);
 const activePage = writable('dashboard');

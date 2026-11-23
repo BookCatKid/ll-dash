@@ -294,8 +294,6 @@ let settingsTabsControl;
 
 function setupSettings(){
   document.getElementById('settings-btn').addEventListener('click',openSettings);
-  document.getElementById('settings-close').addEventListener('click',closeSettings);
-  document.getElementById('settings-backdrop').addEventListener('click',closeSettings);
   document.getElementById('logout-btn').addEventListener('click',async()=>{await API.logout();location.reload();});
   document.getElementById('refresh-btn').addEventListener('click', () => {
     if (currentPage === 'scouting') {
@@ -327,16 +325,19 @@ function setupSettings(){
   );
 }
 
-function openSettings(){
-  document.getElementById('settings-modal').classList.remove('hidden');
+function openSettings() {
   renderSettingsTab('event');
+  window.LLDashUI.openDialog(document.getElementById('settings-modal'), {
+    onClose: () => {
+      applyTheme(appSettings.theme || DEFAULT_THEME);
+      applyDisplayMode(appSettings.theme_mode || 'dark', appSettings.density || 'normal');
+      applyBranding(appSettings.dashboard_name, appSettings.team_number);
+    },
+  });
 }
-function closeSettings(){
-  document.getElementById('settings-modal').classList.add('hidden');
-  // discard unsaved live previews
-  applyTheme(appSettings.theme || DEFAULT_THEME);
-  applyDisplayMode(appSettings.theme_mode || 'dark', appSettings.density || 'normal');
-  applyBranding(appSettings.dashboard_name, appSettings.team_number);
+
+function closeSettings() {
+  void window.LLDashUI.closeDialog(document.getElementById('settings-modal'));
 }
 
 function renderSettingsTab(tab){
