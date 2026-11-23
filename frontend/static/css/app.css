@@ -1527,7 +1527,14 @@ html.light .opr-cmp-r{color:#c4313f}
 .match-card .match-alliance-panel { padding: .55rem .6rem; }
 .match-card .match-alliance-heading { margin-bottom: .4rem; }
 .match-card .match-alliance-members { gap: .25rem; }
-.match-card .match-alliance-member { min-height: 24px; }
+.match-card .match-alliance-member {
+    min-height: 24px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .12rem;
+}
+.match-card .match-alliance-member-name { font-size: .68rem; line-height: 1.25; }
+.match-card .match-alliance-member-info { width: 100%; }
 .match-card .match-alliance-score { font-size: 1.35rem; }
 @media (max-width: 390px) {
     .match-card { padding: .6rem; }

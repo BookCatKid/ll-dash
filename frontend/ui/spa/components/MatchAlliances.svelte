@@ -37,6 +37,7 @@
           <div
             class="match-alliance-member"
             class:our-team={Number(team.teamNumber) === Number(teamNumber)}
+            class:compact
           >
             <TeamChip
               {team}
@@ -44,16 +45,17 @@
               ourTeam={teamNumber}
               onOpen={onTeam}
             />
-            {#if !compact}
-              <div class="match-alliance-member-info">
-                {#if team.teamName}<span class="match-alliance-member-name" title={team.teamName}>
-                    {team.teamName}
-                  </span>{/if}
-                <span class="match-alliance-member-station">
+            <div class="match-alliance-member-info">
+              {#if team.teamName || team.nameShort}<span
+                  class="match-alliance-member-name"
+                  title={team.teamName || team.nameShort}
+                >
+                  {team.teamName || team.nameShort}
+                </span>{/if}
+              {#if !compact}<span class="match-alliance-member-station">
                   {team.station}{team.surrogate ? ' · Surrogate' : ''}{team.dq ? ' · DQ' : ''}
-                </span>
-              </div>
-            {/if}
+                </span>{/if}
+            </div>
             {#if !compact && ranks[team.teamNumber]}
               <span class="match-alliance-member-rank">#{ranks[team.teamNumber].rank}</span>
             {/if}
