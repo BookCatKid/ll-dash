@@ -124,7 +124,7 @@ def update_settings():
         v = data.get(key)
         if v is not None:
             if not re.fullmatch(r'#[0-9a-fA-F]{6}', str(v).strip()):
-                return jsonify({'error': f'{key} must be a hex color like #e8ff47'}), 400
+                return jsonify({'error': f'{key} must be a hex color like #a8b8e8'}), 400
             AppSettings.set(key, str(v).strip())
     if data.get('team_pin') is not None:
         pin = str(data['team_pin']).strip()

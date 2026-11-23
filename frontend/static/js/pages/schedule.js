@@ -146,12 +146,12 @@ async function schedule() {
           const label = tossup ? 'Toss-up' : weFavored ? 'Favored' : 'Unfavored';
           predLine = `<span style="color:${color};font-weight:700">${label}</span>
             <span>${pred.confidence}%</span>
-            <span style="font-size:.6rem">OPR <span style="color:#ff8a94">${pred.redOPR.toFixed(0)}</span> v <span style="color:var(--accent2)">${pred.blueOPR.toFixed(0)}</span></span>`;
+            <span style="font-size:.6rem">OPR <span style="color:var(--alliance-red)">${pred.redOPR.toFixed(0)}</span> v <span style="color:var(--alliance-blue)">${pred.blueOPR.toFixed(0)}</span></span>`;
         } else {
-          const predColor = pred.winner === 'Red' ? '#ff8a94' : pred.winner === 'Blue' ? 'var(--accent2)' : 'var(--yellow)';
+          const predColor = pred.winner === 'Red' ? 'var(--alliance-red)' : pred.winner === 'Blue' ? 'var(--alliance-blue)' : 'var(--yellow)';
           predLine = `<span style="color:${predColor};font-weight:700">${pred.winner === 'Tie' ? 'Toss-up' : pred.winner + ' favored'}</span>
             <span>${pred.confidence}%</span>
-            <span style="font-size:.6rem">OPR <span style="color:#ff8a94">${pred.redOPR.toFixed(0)}</span> v <span style="color:var(--accent2)">${pred.blueOPR.toFixed(0)}</span></span>`;
+            <span style="font-size:.6rem">OPR <span style="color:var(--alliance-red)">${pred.redOPR.toFixed(0)}</span> v <span style="color:var(--alliance-blue)">${pred.blueOPR.toFixed(0)}</span></span>`;
         }
       }
 
@@ -263,18 +263,18 @@ function openMatchDetail(matchNumber) {
       <div class="modal-body">
         ${played ? `
         <div class="stat-grid" style="margin-bottom:1rem">
-          <div class="stat-box" style="border-color:rgba(255,71,87,.3)">
-            <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;color:#ff8a94;font-family:var(--mono);margin-bottom:.3rem">Red Alliance${redRP!=null?` · <span style="color:var(--text)">${redRP} RP</span>`:''}</div>
-            <div class="stat-value" style="color:#ff8a94;font-size:2.2rem">${m.scoreRedFinal}</div>
+          <div class="stat-box" style="border-color:color-mix(in srgb, var(--alliance-red) 30%, transparent)">
+            <div style="font-size:.75rem;font-weight:600;color:var(--alliance-red);font-family:var(--mono);margin-bottom:.3rem">Red Alliance${redRP!=null?` · <span style="color:var(--text)">${redRP} RP</span>`:''}</div>
+            <div class="stat-value" style="color:var(--alliance-red);font-size:2.2rem">${m.scoreRedFinal}</div>
             <div style="font-size:.72rem;font-family:var(--mono);color:var(--text2);margin-top:.3rem">
               Auto: ${m.scoreRedAuto??'?'} · Foul pts committed: ${m.scoreRedFoul??0}
             </div>
             ${sc?rpBadge(sc.red, m.redWins):''}
             ${m.redWins?'<div style="font-size:.75rem;color:var(--green);font-weight:600;margin-top:.25rem">Winner</div>':''}
           </div>
-          <div class="stat-box" style="border-color:rgba(71,200,255,.3)">
-            <div style="font-size:.65rem;font-weight:700;letter-spacing:.08em;color:var(--accent2);font-family:var(--mono);margin-bottom:.3rem">Blue Alliance${blueRP!=null?` · <span style="color:var(--text)">${blueRP} RP</span>`:''}</div>
-            <div class="stat-value" style="color:var(--accent2);font-size:2.2rem">${m.scoreBlueFinal}</div>
+          <div class="stat-box" style="border-color:color-mix(in srgb, var(--alliance-blue) 30%, transparent)">
+            <div style="font-size:.75rem;font-weight:600;color:var(--alliance-blue);font-family:var(--mono);margin-bottom:.3rem">Blue Alliance${blueRP!=null?` · <span style="color:var(--text)">${blueRP} RP</span>`:''}</div>
+            <div class="stat-value" style="color:var(--alliance-blue);font-size:2.2rem">${m.scoreBlueFinal}</div>
             <div style="font-size:.72rem;font-family:var(--mono);color:var(--text2);margin-top:.3rem">
               Auto: ${m.scoreBlueAuto??'?'} · Foul pts committed: ${m.scoreBlueFoul??0}
             </div>
@@ -294,11 +294,11 @@ function openMatchDetail(matchNumber) {
         </div>`}
 
         <div style="margin-bottom:.75rem">
-          <div class="section-label" style="color:#ff8a94;margin-bottom:.25rem">Red Alliance</div>
+          <div class="section-label" style="color:var(--alliance-red);margin-bottom:.25rem">Red Alliance</div>
           ${red.map(t=>teamDetailRow(t,'red')).join('')}
         </div>
         <div>
-          <div class="section-label" style="color:var(--accent2);margin-bottom:.25rem">Blue Alliance</div>
+          <div class="section-label" style="color:var(--alliance-blue);margin-bottom:.25rem">Blue Alliance</div>
           ${blue.map(t=>teamDetailRow(t,'blue')).join('')}
         </div>
 
@@ -338,7 +338,7 @@ async function _fillMatchAdvanced(m, red, blue) {
   const played = m.scoreRedFinal !== null && m.scoreRedFinal !== undefined;
   const verdict = played ? '' : pred.winner === 'Tie'
     ? `· <span style="color:var(--yellow)">Toss-up</span>`
-    : `· <span style="color:${pred.winner === 'Red' ? '#ff8a94' : 'var(--accent2)'}">${pred.winner} favored ${pred.confidence}%</span>`;
+    : `· <span style="color:${pred.winner === 'Red' ? 'var(--alliance-red)' : 'var(--alliance-blue)'}">${pred.winner} favored ${pred.confidence}%</span>`;
   el.innerHTML = `
     <div style="margin-top:.75rem">
       <div class="section-label" style="margin-bottom:.25rem">OPR Favoring ${verdict}</div>

@@ -275,7 +275,7 @@ async function openTeamModal(teamNum) {
     const rp = alliance ? computeMatchRP(alliance, won, isTie) : null;
     return `<div style="display:flex;gap:.5rem;align-items:center;padding:.35rem 0;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:.75rem">
       <span style="color:var(--text3);min-width:30px">Q${m.matchNumber}</span>
-      <span style="${a==='Red'?'color:#ff8a94':'color:var(--accent2)'}">${a}</span>
+      <span style="${a==='Red'?'color:var(--alliance-red)':'color:var(--accent2)'}">${a}</span>
       <span style="flex:1;color:var(--text2)">${s} pts</span>
       ${rp!=null?`<span style="color:var(--accent);font-weight:700">${rp} RP</span>`:''}
       <span style="color:${won?'var(--green)':isTie?'var(--yellow)':'var(--red)'};font-weight:700;min-width:14px;text-align:right">${won?'W':isTie?'T':'L'}</span>

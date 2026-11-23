@@ -134,7 +134,7 @@ async function dashboard() {
             const bRP = computeMatchRP(sc.blue, last.blueWins, tie);
             return rpPairChip(rRP, bRP, sc.red, sc.blue);
           })()}
-          <span style="background:transparent;border:1px solid var(--border);color:${alliance==='Red'?'#ff8a94':'#47c8ff'};font-weight:700">${alliance}</span>
+          <span style="background:transparent;border:1px solid var(--border);color:${alliance==='Red'?'var(--alliance-red)':'var(--alliance-blue)'};font-weight:700">${alliance}</span>
         </div>
       </div>`;
   }
@@ -199,7 +199,7 @@ async function dashboard() {
               const bRP = computeMatchRP(sc.blue, m.blueWins, tie);
               return rpPairChip(rRP, bRP, sc.red, sc.blue);
             })()}
-            <span style="background:transparent;border:1px solid var(--border);color:${ourA(m)==='Red'?'#ff8a94':'#47c8ff'};font-weight:700">${m.teams.find(t=>t.teamNumber==TEAM_NUMBER)?.station||''}</span>
+            <span style="background:transparent;border:1px solid var(--border);color:${ourA(m)==='Red'?'var(--alliance-red)':'var(--alliance-blue)'};font-weight:700">${m.teams.find(t=>t.teamNumber==TEAM_NUMBER)?.station||''}</span>
           </div>
         </div>`;
     }).join('');

@@ -16,9 +16,9 @@ from backend.models.models import AppSettings
 DEFAULT_DASHBOARD_NAME = 'LL Dash'
 
 DEFAULT_THEME = {
-    'accent':  '#e8ff47',
-    'accent2': '#47c8ff',
-    'bg':      '#0a0a0f',
+    'accent':  '#a8b8e8',
+    'accent2': '#9bc6c7',
+    'bg':      '#151820',
 }
 
 DEFAULT_SCOUTING_FIELDS = [
@@ -304,7 +304,7 @@ def validate_flag_categories(cats):
             return None, 'Every category needs a name'
         color = str(c.get('color', '')).strip()
         if not re.fullmatch(r'#[0-9a-fA-F]{6}', color):
-            return None, f'Category "{label}" needs a hex color like #2ed573'
+            return None, f'Category "{label}" needs a hex color like #8dc9a5'
         key = slugify(c.get('key') or label)
         if key == 'neutral':
             return None, '"neutral" is reserved for unflagged teams'

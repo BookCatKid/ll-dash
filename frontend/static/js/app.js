@@ -3,10 +3,10 @@ let appSettings  = {};
 let currentPage  = 'dashboard';
 
 // ── Deployment-config fallbacks (server is the source of truth) ──
-const DEFAULT_THEME = { accent:'#e8ff47', accent2:'#47c8ff', bg:'#0a0a0f' };
+const DEFAULT_THEME = { accent:'#a8b8e8', accent2:'#9bc6c7', bg:'#151820' };
 const DEFAULT_FLAG_CATEGORIES = [
-  { key:'target', label:'Target',      color:'#2ed573', icon:'🎯' },
-  { key:'dnp',    label:'Do Not Pick', color:'#ff4757', icon:'🚫' },
+  { key:'target', label:'Target',      color:'#8dc9a5', icon:'🎯' },
+  { key:'dnp',    label:'Do Not Pick', color:'#f18b94', icon:'🚫' },
 ];
 const NEUTRAL_FLAG = { key:'neutral', label:'Neutral', color:'#888888', icon:'—' };
 const DEFAULT_SCOUTING_FIELDS = [
@@ -40,13 +40,13 @@ const DEFAULT_NAV_CONFIG = Object.keys(NAV_PAGES).map(key => ({key, visible:true
 
 // One-click theme presets — they just populate the accent/accent2/bg pickers
 const THEME_PRESETS = [
-  { name:'Classic Dark',  mode:'dark',  accent:'#e8ff47', accent2:'#47c8ff', bg:'#0a0a0f' },
-  { name:'High Contrast', mode:'dark',  accent:'#ffe600', accent2:'#00e5ff', bg:'#000000' },
-  { name:'Light Mode',    mode:'light', accent:'#6d28d9', accent2:'#0284c7', bg:'#f5f5f7' },
-  { name:'Red Alliance',  mode:'dark',  accent:'#ff4757', accent2:'#ffa502', bg:'#140a0c' },
-  { name:'Blue Alliance', mode:'dark',  accent:'#47c8ff', accent2:'#e8ff47', bg:'#080d14' },
-  { name:'Forest',        mode:'dark',  accent:'#2ed573', accent2:'#7bed9f', bg:'#0a120c' },
-  { name:'Royal',         mode:'dark',  accent:'#a55eea', accent2:'#fd79a8', bg:'#0e0a14' },
+  { name:'Slate',         mode:'dark',  accent:'#a8b8e8', accent2:'#9bc6c7', bg:'#151820' },
+  { name:'High contrast', mode:'dark',  accent:'#f5f6f8', accent2:'#c7cbd3', bg:'#090b0f' },
+  { name:'Light',         mode:'light', accent:'#425f9f', accent2:'#216968', bg:'#f4f5f8' },
+  { name:'Red alliance',  mode:'dark',  accent:'#e799a4', accent2:'#b9b3c8', bg:'#1d171b' },
+  { name:'Blue alliance', mode:'dark',  accent:'#90bdec', accent2:'#b7c8db', bg:'#141b24' },
+  { name:'Forest',        mode:'dark',  accent:'#91c0a8', accent2:'#b5c9b9', bg:'#151d1a' },
+  { name:'Lavender',      mode:'dark',  accent:'#b6ade9', accent2:'#c5b4ce', bg:'#191720' },
 ];
 
 function escHtml(s) {
@@ -702,7 +702,7 @@ function renderSettingsFlags(c){
       <div id="fc-list">${wc.map((f,i)=>`
         <div class="cfg-row" data-i="${i}">
           <div class="cfg-row-main">
-            <input type="color" class="fc-color" data-i="${i}" value="${f.color||'#2ed573'}" style="width:38px;height:38px;flex-shrink:0"/>
+            <input type="color" class="fc-color" data-i="${i}" value="${f.color||'#8dc9a5'}" style="width:38px;height:38px;flex-shrink:0"/>
             <input class="setting-input fc-label" data-i="${i}" value="${escHtml(f.label||'')}" placeholder="Category name" maxlength="32"/>
             <input class="setting-input fc-icon" data-i="${i}" value="${escHtml(f.icon||'')}" placeholder="🎯" maxlength="4" style="width:58px;flex-shrink:0;text-align:center"/>
           </div>
@@ -727,7 +727,7 @@ function renderSettingsFlags(c){
     c.querySelectorAll('[data-up]').forEach(b=>b.addEventListener('click',()=>{sync();const i=+b.dataset.up;[wc[i-1],wc[i]]=[wc[i],wc[i-1]];draw();}));
     c.querySelectorAll('[data-down]').forEach(b=>b.addEventListener('click',()=>{sync();const i=+b.dataset.down;[wc[i],wc[i+1]]=[wc[i+1],wc[i]];draw();}));
     c.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{sync();wc.splice(+b.dataset.del,1);draw();}));
-    document.getElementById('fc-add').addEventListener('click',()=>{sync();wc.push({label:'',color:'#a55eea',icon:''});draw();});
+    document.getElementById('fc-add').addEventListener('click',()=>{sync();wc.push({label:'',color:'#b6ade9',icon:''});draw();});
     document.getElementById('fc-defaults').addEventListener('click',()=>{wc=JSON.parse(JSON.stringify(DEFAULT_FLAG_CATEGORIES));draw();});
     document.getElementById('fc-save').addEventListener('click',async()=>{
       sync();

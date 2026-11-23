@@ -286,7 +286,7 @@ async function simulator() {
           const fav  = pred.winner === ourA;
           favLine = `<span style="color:${fav ? 'var(--green)' : 'var(--red)'};font-weight:700">${fav ? 'Favored' : 'Unfavored'}</span><span>${pred.confidence}%</span>`;
         } else {
-          favLine = `<span style="color:${pred.winner === 'Red' ? '#ff8a94' : 'var(--accent2)'};font-weight:700">${pred.winner} favored</span><span>${pred.confidence}%</span>`;
+          favLine = `<span style="color:${pred.winner === 'Red' ? 'var(--alliance-red)' : 'var(--accent2)'};font-weight:700">${pred.winner} favored</span><span>${pred.confidence}%</span>`;
         }
         subStats = `<div class="match-sub-stats">
           ${pairChip('OPR', pred.redOPR.toFixed(0), pred.blueOPR.toFixed(0))}
@@ -306,12 +306,12 @@ async function simulator() {
           <div class="sim-ctrl-col">
             <div class="sim-rp-row">
               <button class="sim-rp-btn sim-rp-minus" data-match="${m.matchNumber}" data-side="red">-</button>
-              <div class="sim-rp-num" style="color:#ff8a94">${redVal}</div>
+              <div class="sim-rp-num" style="color:var(--alliance-red)">${redVal}</div>
               <button class="sim-rp-btn sim-rp-plus" data-match="${m.matchNumber}" data-side="red">+</button>
             </div>
             <div class="sim-rp-row">
               <button class="sim-rp-btn sim-rp-minus" data-match="${m.matchNumber}" data-side="blue">-</button>
-              <div class="sim-rp-num" style="color:#47c8ff">${blueVal}</div>
+              <div class="sim-rp-num" style="color:var(--alliance-blue)">${blueVal}</div>
               <button class="sim-rp-btn sim-rp-plus" data-match="${m.matchNumber}" data-side="blue">+</button>
             </div>
             ${!played ? `<button class="sim-auto-btn" data-auto="${m.matchNumber}" title="Fill with the OPR + bonus-rate estimate">✨ auto</button>` : ''}

@@ -282,9 +282,9 @@ function _bkFavLine(pred, redA, blueA, rosters) {
     verdict = `<span style="color:${fav ? 'var(--green)' : 'var(--red)'}">${fav ? 'Favored' : 'Unfavored'}</span> ${pred.confidence}%`;
   } else {
     const favA = pred.winner === 'Red' ? redA : blueA;
-    verdict = `<span style="color:${pred.winner === 'Red' ? '#ff8a94' : 'var(--accent2)'}">A${favA} favored</span> ${pred.confidence}%`;
+    verdict = `<span style="color:${pred.winner === 'Red' ? 'var(--alliance-red)' : 'var(--accent2)'}">A${favA} favored</span> ${pred.confidence}%`;
   }
-  return `<div class="bk-pred">${verdict} · OPR <span style="color:#ff8a94">${pred.redOPR.toFixed(0)}</span> v <span style="color:var(--accent2)">${pred.blueOPR.toFixed(0)}</span></div>
+  return `<div class="bk-pred">${verdict} · OPR <span style="color:var(--alliance-red)">${pred.redOPR.toFixed(0)}</span> v <span style="color:var(--accent2)">${pred.blueOPR.toFixed(0)}</span></div>
     ${appSettings.advanced_predictions !== false ? oprBreakdownHtml(pred) : ''}`;
 }
 
@@ -509,7 +509,7 @@ function playoffMatchRow(m, aMap) {
        </div>`
     : `<div class="match-time">${formatTime(m.startTime)}</div>`;
   const winTag = played
-    ? `<span class="po-win-tag" style="color:${isTie ? 'var(--yellow)' : m.redWins ? '#ff8a94' : 'var(--accent2)'}">${isTie ? 'TIE' : (m.redWins ? 'RED' : 'BLUE') + ' WINS'}</span>`
+    ? `<span class="po-win-tag" style="color:${isTie ? 'var(--yellow)' : m.redWins ? 'var(--alliance-red)' : 'var(--accent2)'}">${isTie ? 'TIE' : (m.redWins ? 'RED' : 'BLUE') + ' WINS'}</span>`
     : '';
   // Favored/Unfavored for upcoming matches (OPR)
   let favLine = '';
@@ -521,7 +521,7 @@ function playoffMatchRow(m, aMap) {
         ? `<span style="color:var(--yellow);font-weight:700">Toss-up</span>`
         : ourSide
           ? `<span style="color:${pred.winner === ourSide ? 'var(--green)' : 'var(--red)'};font-weight:700">${pred.winner === ourSide ? 'Favored' : 'Unfavored'}</span><span>${pred.confidence}%</span>`
-          : `<span style="color:${pred.winner === 'Red' ? '#ff8a94' : 'var(--accent2)'};font-weight:700">${pred.winner} favored</span><span>${pred.confidence}%</span>`;
+          : `<span style="color:${pred.winner === 'Red' ? 'var(--alliance-red)' : 'var(--accent2)'};font-weight:700">${pred.winner} favored</span><span>${pred.confidence}%</span>`;
       favLine = `<div class="match-sub-stats">${verdict}${pairChip('OPR', pred.redOPR.toFixed(0), pred.blueOPR.toFixed(0))}</div>`;
     }
   }
