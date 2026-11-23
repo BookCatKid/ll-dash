@@ -3,6 +3,8 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import Icon from './Icon.svelte';
+  import SettingSwitch from './SettingSwitch.svelte';
+  import PageVisibilitySettings from './PageVisibilitySettings.svelte';
   import { api } from '../lib/api.js';
   import { applyAppearance, initialTheme, themePresets } from '../lib/theme.js';
   import { pages } from '../lib/nav.js';
@@ -10,8 +12,9 @@
   let { settings, onSaved, onClose, notify } = $props();
   const copy = (value) => JSON.parse(JSON.stringify(value));
   let activeTab = writable('event');
+  const modeTabs = writable('dark');
+  const densityTabs = writable('normal');
   let tab = $state('event');
-  let navigationScope = $state('shared');
   let eventSeason = $state(2026);
   let seasons = $state([]);
   let eventSearch = $state('');
@@ -60,6 +63,8 @@
     theme = { ...initialTheme, ...(settings.theme || {}) };
     mode = settings.theme_mode || 'dark';
     density = settings.density || 'normal';
+    modeTabs.set(mode);
+    densityTabs.set(density);
     nav = copy(settings.nav || Object.keys(pages).map((key) => ({ key, visible: true })));
     bigscreen = copy(settings.bigscreen || bigscreen);
     highlightAwards = settings.awards_highlight_ours !== false;
@@ -99,6 +104,7 @@
   function choosePreset(preset) {
     theme = { accent: preset.accent, accent2: preset.accent2, bg: preset.bg };
     mode = preset.mode;
+    modeTabs.set(mode);
     preview();
   }
   function restoreAppearance() {
@@ -214,6 +220,11 @@
     deviceHidden = checked ? deviceHidden.filter((item) => item !== key) : [...deviceHidden, key];
     localStorage.setItem('device_hidden_tabs', JSON.stringify(deviceHidden));
     onSaved({ ...settings });
+  }
+
+  function setSharedVisibility(key, checked) {
+    if (key === 'dashboard') return;
+    nav = nav.map((item) => (item.key === key ? { ...item, visible: checked } : item));
   }
 
   async function saveFields() {
@@ -359,46 +370,34 @@
   </div>
   <div class="setting-group">
     <span class="setting-label">Mode and density</span>
-    <div class="seg-toggle">
-      <button
-        class:on={mode === 'dark'}
-        onclick={() => {
-          mode = 'dark';
-          if (theme.bg === '#f4f5f8') theme.bg = initialTheme.bg;
-          preview();
-        }}
-      >
-        Dark
-      </button><button
-        class:on={mode === 'light'}
-        onclick={() => {
-          mode = 'light';
-          if (theme.bg === initialTheme.bg) theme.bg = '#f4f5f8';
-          preview();
-        }}
-      >
-        Light
-      </button>
-    </div>
-    <div class="seg-toggle" style="margin-top:.5rem">
-      <button
-        class:on={density === 'normal'}
-        onclick={() => {
-          density = 'normal';
-          preview();
-        }}
-      >
-        Normal
-      </button><button
-        class:on={density === 'compact'}
-        onclick={() => {
-          density = 'compact';
-          preview();
-        }}
-      >
-        Compact
-      </button>
-    </div>
+    <SegmentedTabs
+      items={[
+        { key: 'dark', label: 'Dark' },
+        { key: 'light', label: 'Light' },
+      ]}
+      activeTab={modeTabs}
+      onSelect={(value) => {
+        mode = value;
+        modeTabs.set(value);
+        if (value === 'dark' && theme.bg === '#f4f5f8') theme.bg = initialTheme.bg;
+        if (value === 'light' && theme.bg === initialTheme.bg) theme.bg = '#f4f5f8';
+        preview();
+      }}
+      extraClass="settings-choice-tabs"
+    />
+    <SegmentedTabs
+      items={[
+        { key: 'normal', label: 'Normal' },
+        { key: 'compact', label: 'Compact' },
+      ]}
+      activeTab={densityTabs}
+      onSelect={(value) => {
+        density = value;
+        densityTabs.set(value);
+        preview();
+      }}
+      extraClass="settings-choice-tabs"
+    />
   </div>
   <div style="display:flex;gap:.5rem">
     <button class="btn btn-primary" disabled={saving} onclick={saveDisplay}>Save</button><button
@@ -407,6 +406,8 @@
         theme = { ...initialTheme };
         mode = 'dark';
         density = 'normal';
+        modeTabs.set(mode);
+        densityTabs.set(density);
         preview();
       }}
     >
@@ -414,68 +415,27 @@
     </button>
   </div>
 {:else if tab === 'pages'}
-  <div class="setting-group">
-    <span class="setting-label">Navigation</span>
-    <div class="seg-toggle" style="margin-bottom:.75rem">
-      <button class:on={navigationScope === 'shared'} onclick={() => (navigationScope = 'shared')}>
-        All devices
-      </button>
-      <button class:on={navigationScope === 'device'} onclick={() => (navigationScope = 'device')}>
-        This device
-      </button>
+  <PageVisibilitySettings
+    {nav}
+    {deviceHidden}
+    onMove={(index, offset) => move(nav, index, offset)}
+    onSharedChange={setSharedVisibility}
+    onDeviceChange={setDeviceVisibility}
+  />
+  <section class="setting-group" aria-label="Display panels">
+    <h3 class="setting-label">Display panels</h3>
+    <div class="settings-page-list">
+      {#each ['schedule', 'rankings', 'playoffs'] as panel}
+        <SettingSwitch
+          id={`display-panel-${panel}`}
+          label={pages[panel].label}
+          icon={pages[panel].icon}
+          checked={bigscreen.panels[panel]}
+          onChange={(checked) => (bigscreen.panels[panel] = checked)}
+        />
+      {/each}
     </div>
-    {#if navigationScope === 'shared'}
-      {#each nav as item, index (item.key)}
-        <div class="cfg-row">
-          <div class="cfg-row-main" style="align-items:center;gap:.45rem">
-            <label class="sf-req-label" style="margin:0">
-              <input
-                type="checkbox"
-                bind:checked={item.visible}
-                disabled={item.key === 'dashboard'}
-                aria-label={`Show ${pages[item.key]?.label || item.key}`}
-              />
-            </label>
-            <span style="flex:1">{pages[item.key]?.label || item.key}</span>
-            <button
-              class="icon-btn cfg-mini"
-              aria-label="Move up"
-              disabled={index === 0}
-              onclick={() => move(nav, index, -1)}
-            >
-              <Icon name="arrow-up" size={17} />
-            </button>
-            <button
-              class="icon-btn cfg-mini"
-              aria-label="Move down"
-              disabled={index === nav.length - 1}
-              onclick={() => move(nav, index, 1)}
-            >
-              <Icon name="arrow-down" size={17} />
-            </button>
-          </div>
-        </div>
-      {/each}
-    {:else}
-      {#each nav.filter((item) => item.visible && item.key !== 'dashboard') as item (item.key)}
-        <label class="sf-req-label">
-          <input
-            type="checkbox"
-            checked={!deviceHidden.includes(item.key)}
-            onchange={(event) => setDeviceVisibility(item.key, event.currentTarget.checked)}
-          />{pages[item.key]?.label || item.key}
-        </label>
-      {/each}
-    {/if}
-  </div>
-  <div class="setting-group">
-    <span class="setting-label">Display panels</span>
-    {#each ['schedule', 'rankings', 'playoffs'] as panel}
-      <label class="sf-req-label">
-        <input type="checkbox" bind:checked={bigscreen.panels[panel]} />{pages[panel].label}
-      </label>
-    {/each}
-    <div class="form-row">
+    <div class="form-row settings-panel-intervals">
       <label class="form-group">
         Cycle (seconds)<input
           class="setting-input"
@@ -495,14 +455,24 @@
         />
       </label>
     </div>
-  </div>
-  <div class="setting-group">
-    <label class="sf-req-label">
-      <input type="checkbox" bind:checked={advancedPredictions} />Advanced predictions
-    </label><label class="sf-req-label">
-      <input type="checkbox" bind:checked={highlightAwards} />Highlight our awards
-    </label>
-  </div>
+  </section>
+  <section class="setting-group" aria-label="Other page options">
+    <h3 class="setting-label">Other options</h3>
+    <div class="settings-page-list">
+      <SettingSwitch
+        id="advanced-predictions"
+        label="Advanced predictions"
+        checked={advancedPredictions}
+        onChange={(checked) => (advancedPredictions = checked)}
+      />
+      <SettingSwitch
+        id="highlight-awards"
+        label="Highlight our awards"
+        checked={highlightAwards}
+        onChange={(checked) => (highlightAwards = checked)}
+      />
+    </div>
+  </section>
   <button class="btn btn-primary btn-block" disabled={saving} onclick={savePages}>Save</button>
 {:else if tab === 'scouting'}
   {#each scoutingFields as field, index (index)}

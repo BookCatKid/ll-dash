@@ -1,9 +1,10 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
-  import { isOurMatch, allianceFor, computeRp, number as displayNumber } from '../lib/helpers.js';
+  import { isOurMatch, number as displayNumber } from '../lib/helpers.js';
   import TeamStatGrid from './TeamStatGrid.svelte';
   import TeamIdentity from './TeamIdentity.svelte';
+  import TeamMatchHistory from './TeamMatchHistory.svelte';
 
   let { number, settings, notify, onScout, onMatch } = $props();
   let rank = $state(null);
@@ -20,7 +21,6 @@
   let error = $state('');
 
   const season = $derived(Number(settings.active_season));
-  const played = $derived(matches.filter((match) => match.scoreRedFinal != null));
   const globalStats = $derived([
     { label: 'Total npOPR', data: stats?.tot || stats?.totalNp },
     { label: 'Auto OPR', data: stats?.auto || stats?.autonomousNp },
@@ -51,15 +51,6 @@
         label: fields.find((field) => field.key === key)?.label || key.replaceAll('_', ' '),
         value: String(value),
       }));
-  }
-
-  function matchRP(match) {
-    const entry = matchScores[match.matchNumber];
-    if (!entry) return null;
-    const side = allianceFor(match, number);
-    const won = side === 'Red' ? match.redWins : match.blueWins;
-    const tied = match.redWins === false && match.blueWins === false;
-    return computeRp(entry[side.toLowerCase()], won, tied, season);
   }
 
   onMount(() => {
@@ -187,33 +178,7 @@
       {/each}
     </div>
   </div>
-  {#if played.length}
-    <div class="form-label">Match results at this event</div>
-    {#each [...played].slice(-4).reverse() as match (match.matchNumber)}
-      {@const side = allianceFor(match, number)}
-      {@const won = side === 'Red' ? match.redWins : match.blueWins}
-      {@const tied = match.redWins === false && match.blueWins === false}
-      <button
-        class="match-detail-row"
-        style="display:flex;gap:.5rem;align-items:center;width:100%;text-align:left"
-        onclick={() => onMatch(match)}
-      >
-        <span style="color:var(--text3)">Q{match.matchNumber}</span>
-        <span style:color={side === 'Red' ? 'var(--alliance-red)' : 'var(--alliance-blue)'}>
-          {side}
-        </span>
-        <span style="flex:1">
-          {side === 'Red' ? match.scoreRedFinal : match.scoreBlueFinal} pts
-        </span>
-        {#if matchRP(match) != null}<strong style="color:var(--accent)">
-            {matchRP(match)} RP
-          </strong>{/if}
-        <strong style:color={won ? 'var(--green)' : tied ? 'var(--yellow)' : 'var(--red)'}>
-          {won ? 'W' : tied ? 'T' : 'L'}
-        </strong>
-      </button>
-    {/each}
-  {/if}
+  <TeamMatchHistory {matches} teamNumber={number} {matchScores} {season} {onMatch} />
   <div class="form-label" style="margin-top:1rem">Scouting notes ({notes.length})</div>
   {#if !notes.length}<div class="empty-state" style="padding:.6rem 0">
       No scouting notes yet.
