@@ -66,11 +66,7 @@ async function schedule() {
   window._schedRankMap = rankMap;
 
   renderPage(`
-    <div class="tabs" style="margin-bottom:.5rem">
-      <button class="tab active" id="tab-all">All</button>
-      <button class="tab" id="tab-ours">Ours</button>
-      <button class="tab" id="tab-upcoming">Upcoming</button>
-    </div>
+    <div id="schedule-tabs"></div>
     <div id="sched-list"></div>`);
 
   function predictMatch(m) {
@@ -189,9 +185,19 @@ async function schedule() {
 
   renderMatches(matches);
 
-  document.getElementById('tab-all').addEventListener('click', ()=>{ currentFilter='all'; setActiveTab('tab-all'); renderMatches(getFilteredList()); });
-  document.getElementById('tab-ours').addEventListener('click', ()=>{ currentFilter='ours'; setActiveTab('tab-ours'); renderMatches(getFilteredList()); });
-  document.getElementById('tab-upcoming').addEventListener('click', ()=>{ currentFilter='upcoming'; setActiveTab('tab-upcoming'); renderMatches(getFilteredList()); });
+  window.LLDashUI.createTabs(
+    document.getElementById('schedule-tabs'),
+    [
+      {key: 'all', label: 'All'},
+      {key: 'ours', label: 'Ours'},
+      {key: 'upcoming', label: 'Upcoming'},
+    ],
+    currentFilter,
+    filter => {
+      currentFilter = filter;
+      renderMatches(getFilteredList());
+    },
+  );
 
 }
 

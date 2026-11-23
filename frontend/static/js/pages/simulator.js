@@ -437,21 +437,22 @@ async function simulator() {
   }
 
   renderPage(`
-    <div class="tabs" style="margin-bottom:.75rem">
-      <button class="tab sim-tab active" data-simtab="sim-schedule">Schedule</button>
-      <button class="tab sim-tab" data-simtab="sim-rankings">Rankings</button>
-    </div>
+    <div id="sim-tabs"></div>
     <div id="sim-tab-content"></div>
   `);
 
-  document.querySelectorAll('.sim-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      activeTab = btn.dataset.simtab;
-      document.querySelectorAll('.sim-tab').forEach(t => t.classList.remove('active'));
-      btn.classList.add('active');
+  window.LLDashUI.createTabs(
+    document.getElementById('sim-tabs'),
+    [
+      {key: 'sim-schedule', label: 'Schedule'},
+      {key: 'sim-rankings', label: 'Rankings'},
+    ],
+    activeTab,
+    tab => {
+      activeTab = tab;
       renderActiveTab();
-    });
-  });
+    },
+  );
 
   renderActiveTab();
 }

@@ -65,15 +65,24 @@ function noteHasSections(n) {
 async function scouting() {
   if (!appSettings.active_event_code) { noEventPage(); return; }
   renderPage(`
-    <div class="tabs">
-      <button class="tab active" id="tab-add">Add Note</button>
-      <button class="tab" id="tab-view">View Notes</button>
-      <button class="tab" id="tab-search">Find Team</button>
-    </div>
+    <div id="scout-tabs"></div>
     <div id="scout-content"></div>`);
-  document.getElementById('tab-add').addEventListener('click',    ()=>{setActiveTab('tab-add');    renderScoutForm();});
-  document.getElementById('tab-view').addEventListener('click',   ()=>{setActiveTab('tab-view');   renderScoutNotes();});
-  document.getElementById('tab-search').addEventListener('click', ()=>{setActiveTab('tab-search'); renderTeamSearch();});
+  window._scoutTab = 'add';
+  window.LLDashUI.createTabs(
+    document.getElementById('scout-tabs'),
+    [
+      {key: 'add', label: 'Add note'},
+      {key: 'view', label: 'View notes'},
+      {key: 'search', label: 'Find team'},
+    ],
+    window._scoutTab,
+    tab => {
+      window._scoutTab = tab;
+      if (tab === 'add') renderScoutForm();
+      if (tab === 'view') renderScoutNotes();
+      if (tab === 'search') renderTeamSearch();
+    },
+  );
   renderScoutForm();
 }
 

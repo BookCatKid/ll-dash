@@ -1,5 +1,5 @@
-const CACHE = 'ftcdash-v15';
-const STATIC = ['/static/css/app.css','/static/js/api.js','/static/js/app.js','/static/js/setup.js',
+const CACHE = 'ftcdash-v17';
+const STATIC = ['/static/build/ui.js','/static/css/app.css','/static/js/api.js','/static/js/app.js','/static/js/setup.js',
   '/static/js/pages/dashboard.js','/static/js/pages/match-scoring.js',
   '/static/js/pages/schedule.js','/static/js/pages/rankings.js',
   '/static/js/pages/scouting.js','/static/js/pages/alliance.js','/static/js/pages/simulator.js',

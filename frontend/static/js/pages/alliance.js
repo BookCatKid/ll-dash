@@ -78,14 +78,18 @@ async function alliance() {
   });
 
   renderPage(`
-    <div class="tabs">
-      <button class="tab active" id="tab-pick">Pick List</button>
-      <button class="tab" id="tab-cmp">Compare</button>
-    </div>
+    <div id="alliance-tabs"></div>
     <div id="alliance-content"></div>`);
 
-  document.getElementById('tab-pick').addEventListener('click',()=>{ setActiveTab('tab-pick'); renderPickList(teams); });
-  document.getElementById('tab-cmp').addEventListener('click', ()=>{ setActiveTab('tab-cmp');  renderCompare(teams); });
+  window.LLDashUI.createTabs(
+    document.getElementById('alliance-tabs'),
+    [
+      {key: 'pick', label: 'Pick list'},
+      {key: 'compare', label: 'Compare'},
+    ],
+    'pick',
+    tab => tab === 'pick' ? renderPickList(teams) : renderCompare(teams),
+  );
   renderPickList(teams);
 }
 

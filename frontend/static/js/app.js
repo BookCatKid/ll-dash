@@ -231,6 +231,7 @@ async function bootApp() {
 
   refreshTopbar();
   buildNav();
+  window.LLDashUI.initNotifications(document.getElementById('toast-host'));
   setupSettings();
   navigateTo('dashboard');
 }
@@ -264,43 +265,33 @@ function navIcon(key) {
     : '';
 }
 
-function buildNav(){
-  const el = document.getElementById('bottom-nav');
-  if (!el) return;
-  const hidden = deviceHiddenTabs();
-  el.innerHTML = navConfig()
-    .filter(n => n.visible && NAV_PAGES[n.key] && !hidden.includes(n.key))
-    .map(n => `
-      <button type="button" class="nav-btn ${n.key===currentPage?'active':''}" data-page="${n.key}" ${n.key===currentPage?'aria-current="page"':''}>
-        ${navIcon(n.key)}
-        <span class="nav-label">${NAV_PAGES[n.key].label}</span>
-      </button>`).join('');
-  el.querySelectorAll('.nav-btn').forEach(btn =>
-    btn.addEventListener('click', () => navigateTo(btn.dataset.page))
+function buildNav() {
+  const tabs = navConfig()
+    .filter(item => item.visible && NAV_PAGES[item.key] && !deviceHiddenTabs().includes(item.key))
+    .map(item => ({key: item.key, ...NAV_PAGES[item.key]}));
+
+  window.LLDashUI.renderNavigation(
+    document.getElementById('nav-host'),
+    tabs,
+    currentPage,
+    navigateTo,
   );
-  el.querySelector('.nav-btn.active')?.scrollIntoView({block:'nearest', inline:'nearest'});
 }
-function navigateTo(page){
-  if (window._bsCleanup){ try{window._bsCleanup();}catch(e){} window._bsCleanup=null; }
-  currentPage=page;
-  const nav = document.getElementById('bottom-nav');
-  nav?.querySelectorAll('.nav-btn').forEach(button => {
-    const active = button.dataset.page === page;
-    button.classList.toggle('active', active);
-    if (active) button.setAttribute('aria-current', 'page');
-    else button.removeAttribute('aria-current');
-  });
-  const selected = nav?.querySelector('.nav-btn.active');
-  if (selected && nav.scrollWidth > nav.clientWidth) {
-    nav.scrollTo({
-      left: selected.offsetLeft - (nav.clientWidth - selected.offsetWidth) / 2,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
+
+function navigateTo(page) {
+  if (window._bsCleanup) {
+    try { window._bsCleanup(); } catch (error) { console.error(error); }
+    window._bsCleanup = null;
   }
-  ({dashboard,schedule,rankings,scouting,alliance,simulator,hub,bigscreen,playoffs,awards})[page]?.();
+
+  currentPage = page;
+  window.LLDashUI.setActivePage(page);
+  ({dashboard, schedule, rankings, scouting, alliance, simulator, hub, bigscreen, playoffs, awards})[page]?.();
 }
 
 // ── Settings sheet (tabbed) ───────────────────────────────────
+let settingsTabsControl;
+
 function setupSettings(){
   document.getElementById('settings-btn').addEventListener('click',openSettings);
   document.getElementById('settings-close').addEventListener('click',closeSettings);
@@ -308,19 +299,31 @@ function setupSettings(){
   document.getElementById('logout-btn').addEventListener('click',async()=>{await API.logout();location.reload();});
   document.getElementById('refresh-btn').addEventListener('click', () => {
     if (currentPage === 'scouting') {
-      if (document.getElementById('tab-view')?.classList.contains('active')) {
+      if (window._scoutTab === 'view') {
         renderScoutNotes();
         return;
       }
-      if (document.getElementById('tab-search')?.classList.contains('active')) {
+      if (window._scoutTab === 'search') {
         renderTeamSearch();
         return;
       }
     }
     navigateTo(currentPage);
   });
-  document.querySelectorAll('#settings-tabs .tab').forEach(t=>
-    t.addEventListener('click',()=>renderSettingsTab(t.dataset.stab))
+  settingsTabsControl = window.LLDashUI.createTabs(
+    document.getElementById('settings-tabs'),
+    [
+      {key: 'event', label: 'Event'},
+      {key: 'display', label: 'Display'},
+      {key: 'scouting', label: 'Scout fields'},
+      {key: 'flags', label: 'Flags'},
+      {key: 'pages', label: 'Pages'},
+      {key: 'data', label: 'Data'},
+      {key: 'advanced', label: 'Team & API'},
+    ],
+    'event',
+    renderSettingsTab,
+    {settings: true},
   );
 }
 
@@ -337,7 +340,7 @@ function closeSettings(){
 }
 
 function renderSettingsTab(tab){
-  document.querySelectorAll('#settings-tabs .tab').forEach(t=>t.classList.toggle('active',t.dataset.stab===tab));
+  settingsTabsControl.select(tab);
   const c = document.getElementById('settings-content');
   if (tab==='event')    renderSettingsEvent(c);
   if (tab==='display')  renderSettingsDisplay(c);
@@ -844,14 +847,27 @@ function renderSettingsAdvanced(c){
 }
 
 // ── Toast ─────────────────────────────────────────────────────
-let _tt;
-function showToast(msg,ms=2200){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.remove('hidden');
-  clearTimeout(_tt);_tt=setTimeout(()=>t.classList.add('hidden'),ms);
+function showToast(message, duration = 2200) {
+  window.LLDashUI.showToast(message, duration);
 }
 
 // ── Page helpers ──────────────────────────────────────────────
-function renderPage(html){document.getElementById('page-container').innerHTML=html;}
+function renderPage(html) {
+  window.LLDashUI.cleanupPageTabs();
+  const container = document.getElementById('page-container');
+  container.innerHTML = html;
+
+  if (container.querySelector('.loading') || currentPage === 'bigscreen') return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  container.animate([
+    {opacity: .75, transform: 'translateY(5px)'},
+    {opacity: 1, transform: 'translateY(0)'},
+  ], {
+    duration: 180,
+    easing: 'cubic-bezier(.2, .8, .2, 1)',
+  });
+}
 function loadingPage(){renderPage('<div class="loading">Loading</div>');}
 function noEventPage(){renderPage(`<div class="empty-state">Choose an event in Settings.</div>`);}
 
@@ -880,11 +896,6 @@ function bindTeamClicks(rankings){
       openTeamModal(parseInt(chip.dataset.team),rankings);
     });
   });
-}
-
-function setActiveTab(id){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById(id)?.classList.add('active');
 }
 
 // Match-detail sub-stats bar

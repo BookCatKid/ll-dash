@@ -1,14 +1,24 @@
+let hubTabsControl;
+
 async function hub() {
   renderPage(`
-    <div class="tabs">
-      <button class="tab active" id="tab-notes">Notes</button>
-      <button class="tab" id="tab-new">+ New</button>
-      <button class="tab" id="tab-checks">Checklists</button>
-    </div>
+    <div id="hub-tabs"></div>
     <div id="hub-content"></div>`);
-  document.getElementById('tab-notes').addEventListener('click',  () => { setActiveTab('tab-notes');  renderHubNotes(); });
-  document.getElementById('tab-new').addEventListener('click',    () => { setActiveTab('tab-new');    renderNewNote(); });
-  document.getElementById('tab-checks').addEventListener('click', () => { setActiveTab('tab-checks'); renderChecklists(); });
+
+  hubTabsControl = window.LLDashUI.createTabs(
+    document.getElementById('hub-tabs'),
+    [
+      {key: 'notes', label: 'Notes'},
+      {key: 'new', label: 'New'},
+      {key: 'checklists', label: 'Checklists'},
+    ],
+    'notes',
+    tab => {
+      if (tab === 'notes') renderHubNotes();
+      if (tab === 'new') renderNewNote();
+      if (tab === 'checklists') renderChecklists();
+    },
+  );
   renderHubNotes();
 }
 
@@ -67,7 +77,7 @@ function renderNewNote() {
     try {
       await API.addHubNote({ title, author, content:body, category:document.getElementById('hub-cat').value, pinned:document.getElementById('hub-pin').checked });
       showToast('Note saved! ✓');
-      setActiveTab('tab-notes');
+      hubTabsControl.select('notes');
       renderHubNotes();
     } catch(e) { showToast('Failed to save'); }
   });

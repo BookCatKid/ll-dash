@@ -1304,3 +1304,75 @@ html.light .opr-cmp-r{color:#c4313f}
     outline: 2px solid var(--accent);
     outline-offset: 2px;
 }
+
+
+/* Shared Svelte navigation */
+.svelte-nav .nav-btn {
+    position: relative;
+    z-index: 1;
+}
+
+.svelte-nav .nav-btn.active {
+    background: none;
+    box-shadow: none;
+}
+
+.nav-active-indicator {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--text) 13%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 12%, transparent);
+}
+
+.nav-active-indicator.ready {
+    transition: left 240ms cubic-bezier(.2, .8, .2, 1),
+                width 240ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .nav-active-indicator.ready {
+        transition: none;
+    }
+}
+
+
+/* Shared segmented control */
+.svelte-tabs {
+    position: relative;
+}
+
+.svelte-tabs .tab {
+    position: relative;
+    z-index: 1;
+}
+
+.svelte-tabs .tab.active {
+    background: transparent;
+    border-color: transparent;
+}
+
+.segmented-indicator {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    z-index: 0;
+    pointer-events: none;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--text) 13%, transparent);
+    box-shadow: inset 0 1px 0 color-mix(in srgb, var(--text) 8%, transparent);
+}
+
+.segmented-indicator.ready {
+    transition: left 220ms cubic-bezier(.2, .8, .2, 1),
+                width 220ms cubic-bezier(.2, .8, .2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .segmented-indicator.ready {
+        transition: none;
+    }
+}

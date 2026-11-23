@@ -63,7 +63,7 @@
   <footer class="attribution app-attribution">Event data provided by <a href="https://frc-events.firstinspires.org/services/API" target="_blank" rel="noopener">FIRST<sup>®</sup> Events API</a></footer>
 
   <!-- Built by buildNav() from the configured page order/visibility -->
-  <nav class="bottom-nav" id="bottom-nav"></nav>
+  <div id="nav-host"></div>
 </div>
 
 <!-- Settings Sheet -->
@@ -75,22 +75,14 @@
       <button class="modal-close" id="settings-close" type="button" title="Close" aria-label="Close"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/x.svg')"></span></button>
     </div>
     <div class="modal-body">
-      <div class="tabs settings-tabs" id="settings-tabs">
-        <button class="tab active" data-stab="event">Event</button>
-        <button class="tab" data-stab="display">Display</button>
-        <button class="tab" data-stab="scouting">Scout Fields</button>
-        <button class="tab" data-stab="flags">Flags</button>
-        <button class="tab" data-stab="pages">Pages</button>
-        <button class="tab" data-stab="data">Data</button>
-        <button class="tab" data-stab="advanced">Team &amp; API</button>
-      </div>
+      <div id="settings-tabs"></div>
       <div id="settings-content"></div>
       <button class="btn btn-danger" id="logout-btn" style="margin-top:1.25rem"><span class="ui-icon" aria-hidden="true" style="--ui-icon:url('/static/icons/nav/lock-keyhole.svg')"></span>Lock app</button>
     </div>
   </div>
 </div>
 
-<div id="toast" class="toast hidden"></div>
+<div id="toast-host"></div>
 
 <script src="/static/js/api.js"></script>
 <script src="/static/js/setup.js"></script>
@@ -105,6 +97,7 @@
 <script src="/static/js/pages/bigscreen.js"></script>
 <script src="/static/js/pages/playoffs.js"></script>
 <script src="/static/js/pages/awards.js"></script>
+<script src="/static/build/ui.js"></script>
 <script src="/static/js/app.js"></script>
 </body>
 </html>
