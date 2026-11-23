@@ -59,6 +59,34 @@ The included [`render.yaml`](render.yaml) is suitable for temporary evaluation, 
 
 To deploy, set a strong `SECRET_KEY` and point `DATABASE_URL` at your persistent SQLite file or PostgreSQL instance. Start the app with `gunicorn "app:create_app()" --bind 0.0.0.0:$PORT`, `wsgi.py` (any WSGI server), or a comparable process manager. On first visit the setup wizard requests your FTC Events API credentials, team number, and PIN.
 
+### Deploy to Oracle Cloud (free forever, recommended)
+
+The production deployment runs on an Oracle Cloud Always Free ARM VM behind a
+Cloudflare Tunnel at `lldash.smrff.dev`:
+
+- **App**: `gunicorn "app:create_app()"` on `127.0.0.1:5000` via the
+  `lldash.service` systemd unit (auto-restarts on boot/crash).
+- **Database**: SQLite at `~/lldash/lldash.db` (persistent disk).
+- **Exposure**: `cloudflared` service runs a remotely-managed tunnel
+  (`lldash.smrff.dev` → `localhost:5000`) — no open ports needed.
+- **Auto-deploy**: `scripts/deploy-oracle.sh` runs from cron every 2 minutes,
+  pulls `origin/main`, reinstalls deps if needed, and restarts the service.
+  Just `git push origin main`.
+
+To reproduce on a fresh VM:
+
+```bash
+mkdir -p ~/lldash && cd ~/lldash
+git clone https://github.com/<you>/ll-dash.git .
+python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
+printf 'SECRET_KEY=<random>\nDATABASE_URL=sqlite:////home/ubuntu/lldash/lldash.db\n' > .env
+# systemd unit: WorkingDirectory=~/lldash, EnvironmentFile=.env,
+# ExecStart=.venv/bin/gunicorn "app:create_app()" --bind 127.0.0.1:5000 --workers 2
+# then: sudo systemctl enable --now lldash
+# cloudflared: sudo cloudflared service install <tunnel-token>
+# cron: */2 * * * * /home/ubuntu/lldash/deploy.sh >> ~/lldash/deploy.log 2>&1
+```
+
 ### Deploy to PythonAnywhere (free, persistent disk)
 
 PythonAnywhere's free tier keeps files between restarts, so the default
