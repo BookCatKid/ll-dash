@@ -30,15 +30,14 @@
     const load = async () => {
       const id = ++request;
       try {
-        const [scheduleData, matchData] = await Promise.all([
-          api.schedule(),
-          loadMatchData(settings),
-        ]);
+        const matchDataRequest = loadMatchData(settings);
+        const scheduleData = await api.schedule();
         if (!active || id !== request) return;
         matches = scheduleData.schedule || [];
-        metrics = matchData;
         error = '';
         loading = false;
+        const matchData = await matchDataRequest;
+        if (active && id === request) metrics = matchData;
       } catch (reason) {
         if (active && id === request) {
           error = reason.message;

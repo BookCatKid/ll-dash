@@ -1,12 +1,27 @@
 import { api } from './api.js';
 import { allianceFor, computeRp, oprPrediction, teamsFor } from './helpers.js';
 
+async function loadEventOprs(eventCode, season) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const result = await api.ftcEventOprs(eventCode, season);
+      if (result?.oprList?.length) return result;
+    } catch {
+      // Retry transient upstream failures before leaving estimates unavailable.
+    }
+    if (attempt < 2) {
+      await new Promise((resolve) => setTimeout(resolve, (attempt + 1) * 1000));
+    }
+  }
+  return null;
+}
+
 export async function loadMatchData(settings) {
   const season = Number(settings.active_season);
   const [scout, official, oprResult, fieldData] = await Promise.all([
     api.ftcEventScores(settings.active_event_code, season).catch(() => null),
     season === 2026 ? api.matches().catch(() => null) : null,
-    api.ftcEventOprs(settings.active_event_code, season).catch(() => null),
+    loadEventOprs(settings.active_event_code, season),
     api.scheduleFields().catch(() => null),
   ]);
 

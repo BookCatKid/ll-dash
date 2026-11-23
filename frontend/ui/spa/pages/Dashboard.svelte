@@ -44,18 +44,16 @@
     const load = async () => {
       const id = ++request;
       try {
-        const [rankData, scheduleData, matchData] = await Promise.all([
-          api.rankings(),
-          api.schedule(),
-          loadMatchData(settings),
-        ]);
+        const matchDataRequest = loadMatchData(settings);
+        const [rankData, scheduleData] = await Promise.all([api.rankings(), api.schedule()]);
         if (!active || id !== request) return;
         ranks = rankData.rankings || rankData.Rankings || [];
         matches = scheduleData.schedule || [];
-        metrics = matchData;
         error = '';
         loading = false;
         updateCountdown();
+        const matchData = await matchDataRequest;
+        if (active && id === request) metrics = matchData;
       } catch (reason) {
         if (active && id === request) {
           error = reason.message;
