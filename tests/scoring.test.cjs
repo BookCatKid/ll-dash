@@ -188,3 +188,71 @@ test('missing hive tip data never implies a zero score', async () => {
   assert.equal(fieldLabel('2'), 'Field 2');
   assert.equal(fieldLabel(null), null);
 });
+
+test('match cards estimate scores and winner probability from OPR', async () => {
+  const { estimatedMatchOutcome } = await import('../frontend/ui/spa/lib/match-data.js');
+  const match = {
+    teams: [
+      { station: 'Red1', teamNumber: 3650 },
+      { station: 'Red2', teamNumber: 26471 },
+      { station: 'Blue1', teamNumber: 6016 },
+      { station: 'Blue2', teamNumber: 39053 },
+    ],
+  };
+  const oprs = {
+    3650: { opr: 12.12 },
+    26471: { opr: 10.49 },
+    6016: { opr: 6.42 },
+    39053: { opr: 7.27 },
+  };
+  assert.deepEqual(estimatedMatchOutcome(match, oprs), {
+    redScore: 23,
+    blueScore: 14,
+    winner: 'Red',
+    winChance: 81,
+  });
+  assert.deepEqual(
+    estimatedMatchOutcome(match, {
+      3650: { opr: 2 },
+      26471: { opr: 5 },
+      6016: { opr: 10 },
+      39053: { opr: 9 },
+    }),
+    { redScore: 7, blueScore: 19, winner: 'Blue', winChance: 100 },
+  );
+  assert.deepEqual(
+    estimatedMatchOutcome(match, {
+      3650: { opr: 10 },
+      26471: { opr: 10 },
+      6016: { opr: 10 },
+      39053: { opr: 10 },
+    }),
+    { redScore: 20, blueScore: 20, winner: 'Tie', winChance: 50 },
+  );
+});
+
+test('match cards hide probability when any OPR is missing', async () => {
+  const { estimatedMatchOutcome } = await import('../frontend/ui/spa/lib/match-data.js');
+  const match = {
+    teams: [
+      { station: 'Red1', teamNumber: 3650 },
+      { station: 'Red2', teamNumber: 26471 },
+      { station: 'Blue1', teamNumber: 6016 },
+      { station: 'Blue2', teamNumber: 39053 },
+    ],
+  };
+  assert.equal(
+    estimatedMatchOutcome(match, { 3650: { opr: 20 }, 26471: { opr: 10 }, 6016: { opr: 6 } }),
+    null,
+  );
+  assert.equal(
+    estimatedMatchOutcome(match, {
+      3650: { opr: 0 },
+      26471: { opr: 10 },
+      6016: { opr: 6 },
+      39053: { opr: 7 },
+    }),
+    null,
+  );
+  assert.equal(estimatedMatchOutcome({ teams: [] }, {}), null);
+});

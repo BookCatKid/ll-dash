@@ -1529,12 +1529,32 @@ html.light .opr-cmp-r{color:#c4313f}
 .match-card .match-alliance-members { gap: .25rem; }
 .match-card .match-alliance-member {
     min-height: 24px;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: .12rem;
+    flex-direction: row;
+    align-items: center;
+    gap: .3rem;
 }
 .match-card .match-alliance-member-name { font-size: .68rem; line-height: 1.25; }
-.match-card .match-alliance-member-info { width: 100%; }
+.match-card .match-alliance-member-info { width: auto; min-width: 0; }
+.match-card .team-chip { flex-shrink: 0; }
+.match-card-estimate {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: .2rem .6rem;
+    margin-top: .55rem;
+    padding: .55rem .15rem 0;
+    border-top: 1px solid var(--border);
+    font-size: .72rem;
+    color: var(--text2);
+    font-variant-numeric: tabular-nums;
+}
+.match-card-estimated-score { display: inline-flex; align-items: baseline; gap: .2rem; }
+.match-card-estimated-score .match-scoring-red,
+.match-card-estimated-score .match-scoring-blue { font-weight: 600; }
+.match-card-probability { font-weight: 500; }
+.match-card-probability.red { color: var(--alliance-red); }
+.match-card-probability.blue { color: var(--alliance-blue); }
 .match-card .match-alliance-score { font-size: 1.35rem; }
 @media (max-width: 390px) {
     .match-card { padding: .6rem; }

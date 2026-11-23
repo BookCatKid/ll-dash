@@ -79,3 +79,33 @@ export function fieldLabel(field) {
   if (Number.isInteger(Number(field)) && Number(field) > 0) return `Field ${Number(field)}`;
   return typeof field === 'string' ? field : null;
 }
+
+export function estimatedMatchOutcome(match, oprs) {
+  const redTeams = teamsFor(match, 'Red');
+  const blueTeams = teamsFor(match, 'Blue');
+  const teams = [...redTeams, ...blueTeams];
+
+  if (redTeams.length === 0 || blueTeams.length === 0) return null;
+  if (
+    teams.some((team) => {
+      const opr = oprs?.[team.teamNumber]?.opr;
+      return !Number.isFinite(opr) || opr <= 0;
+    })
+  )
+    return null;
+
+  const estimate = oprPrediction(redTeams, blueTeams, oprs);
+  const probability =
+    estimate.winner === 'Tie'
+      ? 0.5
+      : estimate.winner === 'Red'
+        ? estimate.redWinProb
+        : 1 - estimate.redWinProb;
+
+  return {
+    redScore: Math.round(estimate.red),
+    blueScore: Math.round(estimate.blue),
+    winner: estimate.winner,
+    winChance: Math.round(probability * 100),
+  };
+}

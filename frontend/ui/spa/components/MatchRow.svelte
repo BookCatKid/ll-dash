@@ -1,7 +1,7 @@
 <script>
   import MatchAlliances from './MatchAlliances.svelte';
   import { formatTime } from '../lib/helpers.js';
-  import { matchOutcome, fieldLabel } from '../lib/match-data.js';
+  import { matchOutcome, fieldLabel, estimatedMatchOutcome } from '../lib/match-data.js';
 
   let { match, teamNumber, onMatch = () => {}, onTeam = () => {}, metrics = {} } = $props();
   const ours = $derived(
@@ -9,6 +9,7 @@
   );
   const outcome = $derived(matchOutcome(match, teamNumber));
   const played = $derived(match.scoreRedFinal != null && match.scoreBlueFinal != null);
+  const estimate = $derived(estimatedMatchOutcome(match, metrics?.oprs));
   const officialField = $derived(metrics?.fields?.[String(match.matchNumber)] ?? null);
   const matchDetail = $derived({
     ...match,
@@ -50,4 +51,24 @@
   </div>
 
   <MatchAlliances {match} {teamNumber} {onTeam} compact />
+
+  {#if estimate}
+    <div
+      class="match-card-estimate"
+      title="Approximate win chance from season OPR. This is a heuristic, not a calibrated probability."
+    >
+      <span class="match-card-estimated-score">
+        Est. <span class="match-scoring-red">{estimate.redScore}</span><span aria-hidden="true">
+          –
+        </span><span class="match-scoring-blue">{estimate.blueScore}</span>
+      </span>
+      <span
+        class="match-card-probability"
+        class:red={estimate.winner === 'Red'}
+        class:blue={estimate.winner === 'Blue'}
+      >
+        {estimate.winner === 'Tie' ? '50% each' : `${estimate.winner} win ~${estimate.winChance}%`}
+      </span>
+    </div>
+  {/if}
 </div>
