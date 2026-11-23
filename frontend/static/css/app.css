@@ -2081,3 +2081,9 @@ html.light .opr-cmp-r{color:#c4313f}
     .sim-match-team-list { grid-template-columns: minmax(0,1fr); }
     .sim-match-alliance { gap: .35rem; }
 }
+
+/* Event picker (setup wizard + settings) */
+.event-picked{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-top:.5rem;padding:.5rem .7rem;border:1px solid var(--border);border-radius:8px;background:var(--bg2);font-size:.82rem}
+.event-picked-clear{background:none;border:none;color:var(--text2);font-size:1.1rem;line-height:1;cursor:pointer;padding:.1rem .3rem}
+.event-picked-clear:hover{color:var(--red)}
+.form-hint{font-size:.72rem;color:var(--text2);margin-top:.4rem}

@@ -1,5 +1,6 @@
 <script>
   import { api } from '../lib/api.js';
+  import EventPicker from './EventPicker.svelte';
   import { initialTheme } from '../lib/theme.js';
   let { onFinished } = $props();
   let step = $state(1);
@@ -8,7 +9,7 @@
   let team = $state('');
   let season = $state(2026);
   let maxSeason = $state(2026);
-  let eventCode = $state('');
+  let event = $state(null); // {code, name} picked via EventPicker
   let pin = $state('');
   let dashboardName = $state('LL Dash');
   let theme = $state({ ...initialTheme });
@@ -56,7 +57,8 @@
         team_number: team,
         team_pin: pin,
         active_season: season,
-        active_event_code: eventCode,
+        active_event_code: event?.code || '',
+        active_event_name: event?.name || '',
         dashboard_name: dashboardName.trim() || 'LL Dash',
         theme_accent: theme.accent,
         theme_accent2: theme.accent2,
@@ -112,11 +114,29 @@
         </label>
       </div>
       <div class="form-group">
-        <label class="form-label" for="su-event">Event code</label><input
+        <label class="form-label" for="su-event">Event</label>
+        <EventPicker
+          {season}
+          inputClass="form-input"
           id="su-event"
-          class="form-input"
-          bind:value={eventCode}
+          onSelect={(e) => (event = { code: e.code, name: e.name })}
         />
+        {#if event}
+          <div class="event-picked">
+            <span>{event.name} ({event.code})</span>
+            <button
+              type="button"
+              class="event-picked-clear"
+              onclick={() => (event = null)}
+              aria-label="Clear event"
+            >
+              ×
+            </button>
+          </div>
+        {/if}
+        <div class="form-hint">
+          Optional — pick your tournament, or choose it later in Settings.
+        </div>
       </div>
       <div class="form-group">
         <label class="form-label" for="su-pin">4-digit PIN</label><input

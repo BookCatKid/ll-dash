@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
+  import EventPicker from './EventPicker.svelte';
   import Icon from './Icon.svelte';
   import SettingSwitch from './SettingSwitch.svelte';
   import PageVisibilitySettings from './PageVisibilitySettings.svelte';
@@ -18,10 +19,6 @@
   let tab = $state('event');
   let eventSeason = $state(2026);
   let seasons = $state([]);
-  let eventSearch = $state('');
-  let events = $state([]);
-  let eventError = $state('');
-  let eventLoading = $state(false);
   let name = $state('LL Dash');
   let theme = $state({ ...initialTheme });
   let mode = $state('dark');
@@ -43,8 +40,6 @@
   let apiKey = $state('');
   let status = $state('');
   let saving = $state(false);
-  let searchCounter = 0;
-  let searchTimer;
 
   const tabs = [
     { key: 'event', label: 'Event' },
@@ -86,7 +81,6 @@
     });
     return () => {
       active = false;
-      clearTimeout(searchTimer);
     };
   });
 
@@ -125,49 +119,12 @@
     }
   }
 
-  function searchEvents() {
-    clearTimeout(searchTimer);
-    const query = eventSearch.trim();
-    const requestId = ++searchCounter;
-    if (query.length < 2) {
-      events = [];
-      eventLoading = false;
-      return;
-    }
-    searchTimer = setTimeout(async () => {
-      eventLoading = true;
-      eventError = '';
-      try {
-        const result = await api.events(eventSeason);
-        if (requestId !== searchCounter) return;
-        const search = query.toLowerCase();
-        events = (result.events || [])
-          .filter((event) =>
-            [event.name, event.code, event.city, event.stateprov].some((value) =>
-              String(value || '')
-                .toLowerCase()
-                .includes(search),
-            ),
-          )
-          .slice(0, 12);
-      } catch (error) {
-        if (requestId === searchCounter) eventError = error.message;
-      } finally {
-        if (requestId === searchCounter) eventLoading = false;
-      }
-    }, 280);
-  }
-
   async function selectEvent(event) {
     const saved = await save(
       { active_event_code: event.code, active_event_name: event.name, active_season: eventSeason },
       { active_event_code: event.code, active_event_name: event.name, active_season: eventSeason },
     );
-    if (saved) {
-      eventSearch = '';
-      events = [];
-      onClose();
-    }
+    if (saved) onClose();
   }
 
   function move(list, index, offset) {
@@ -291,15 +248,7 @@
 {#if tab === 'event'}
   <div class="setting-group">
     <label class="setting-label" for="event-season">Season</label>
-    <select
-      class="setting-select"
-      id="event-season"
-      bind:value={eventSeason}
-      onchange={() => {
-        eventSearch = '';
-        events = [];
-      }}
-    >
+    <select class="setting-select" id="event-season" bind:value={eventSeason}>
       {#each seasons as season}<option value={season}>
           {season}–{String(Number(season) + 1).slice(-2)}
         </option>{/each}
@@ -307,27 +256,7 @@
   </div>
   <div class="setting-group">
     <label class="setting-label" for="event-search">Search events</label>
-    <input
-      class="setting-input"
-      id="event-search"
-      bind:value={eventSearch}
-      oninput={searchEvents}
-      placeholder="City, event name, or code"
-    />
-    {#if eventLoading}<div class="loading">Searching</div>{/if}
-    {#if eventError}<div class="svelte-error">{eventError}</div>{/if}
-    {#each events as event (event.code)}
-      <button
-        class="event-result"
-        style="display:block;width:100%;text-align:left"
-        onclick={() => selectEvent(event)}
-      >
-        <span class="event-result-name">{event.name}</span>
-        <span class="event-result-meta">
-          {event.code} · {event.city || ''}{event.stateprov ? ', ' + event.stateprov : ''}
-        </span>
-      </button>
-    {/each}
+    <EventPicker season={eventSeason} onSelect={selectEvent} />
   </div>
   <div class="setting-group">
     <span class="setting-label">Active event</span>
