@@ -1,56 +1,23 @@
-name: Deploy to PythonAnywhere
+name: Deploy
 
-# Builds the frontend, commits the bundle if it changed, then asks
-# PythonAnywhere to reload — wsgi.py pulls the latest commit on reload.
-#
-# Required repo secrets:
-#   PA_USERNAME  — your PythonAnywhere username
-#   PA_TOKEN     — API token from https://www.pythonanywhere.com/settings/api/
-#   PA_DOMAIN    — your web app domain, e.g. yourname.pythonanywhere.com
+# NOTE: production deploys to the Oracle VM via scripts/deploy-oracle.sh,
+# which runs on a cron poller (see README). This workflow is kept for
+# validation only — it runs tests/checks on push.
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
-
-concurrency:
-  group: pa-deploy
-  cancel-in-progress: false
+  pull_request:
 
 jobs:
-  deploy:
-    # Skip the run triggered by the bot's own "rebuild frontend" commit.
-    if: ${{ !contains(github.event.head_commit.message, 'rebuild frontend bundle') }}
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-
       - run: npm ci
-      - run: npm run build
-
-      - name: Commit rebuilt frontend bundle
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add frontend/static/build
-          if git diff --cached --quiet; then
-            echo "Bundle unchanged — nothing to commit."
-          else
-            git commit -m "chore: rebuild frontend bundle [skip ci]"
-            git push
-          fi
-
-      - name: Trigger PythonAnywhere reload
-        env:
-          PA_USERNAME: ${{ secrets.PA_USERNAME }}
-          PA_TOKEN: ${{ secrets.PA_TOKEN }}
-          PA_DOMAIN: ${{ secrets.PA_DOMAIN }}
-        run: |
-          curl -sf -H "Authorization: Token $PA_TOKEN" \
-            -X POST \
-            "https://www.pythonanywhere.com/api/v0/user/$PA_USERNAME/webapps/$PA_DOMAIN/reload/"
+      - run: npm run check
+      - run: npm test
