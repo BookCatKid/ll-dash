@@ -3,6 +3,7 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import { api } from '../lib/api.js';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
   import { onPageRefresh } from '../lib/refresh.js';
   import Icon from '../components/Icon.svelte';
   import { formatTime } from '../lib/helpers.js';
@@ -185,14 +186,15 @@
         />
         {#if teamInput && !/^\d+$/.test(teamInput)}
           <div class="event-search-results">
-            {#each suggestions as rank}<button
-                class="team-search-result"
-                style="display:block;width:100%;text-align:left"
-                onclick={() => (teamInput = String(rank.teamNumber))}
-              >
-                {rank.teamNumber}
-                {rank.teamName}
-              </button>{/each}
+            {#each suggestions as rank}
+              <div class="team-search-result">
+                <TeamIdentity
+                  team={rank}
+                  ourTeam={settings.team_number}
+                  onOpen={() => (teamInput = String(rank.teamNumber))}
+                />
+              </div>
+            {/each}
           </div>
         {/if}
       </div>
@@ -278,10 +280,15 @@
     {#each groupedNotes as [team, entries] (team)}
       <div class="card">
         <div class="card-header">
-          <button class="card-title" onclick={() => onTeam(Number(team))}>
-            {team}
-            {ranks.find((r) => r.teamNumber === Number(team))?.teamName || ''}
-          </button><span>{entries.length}</span>
+          <span class="card-title">
+            <TeamIdentity
+              team={ranks.find((rank) => Number(rank.teamNumber) === Number(team)) || {
+                teamNumber: Number(team),
+              }}
+              ourTeam={settings.team_number}
+              onOpen={onTeam}
+            />
+          </span><span>{entries.length}</span>
         </div>
         {#each entries as note (note.id)}
           <div style="border-top:1px solid var(--border);padding:.6rem 0;display:flex;gap:.5rem">
@@ -318,17 +325,14 @@
         bind:value={query}
         placeholder="Number or name"
       />
-      {#if query}{#each searchResults as rank (rank.teamNumber)}<button
-            class="match-row"
-            style="width:100%"
-            onclick={() => onTeam(rank.teamNumber)}
-          >
-            <span class="match-num">{rank.teamNumber}</span><span>{rank.teamName}</span><span
-              style="margin-left:auto"
-            >
-              #{rank.rank}
-            </span>
-          </button>{/each}{/if}
+      {#if query}
+        {#each searchResults as rank (rank.teamNumber)}
+          <div class="match-row scouting-search-result">
+            <TeamIdentity team={rank} ourTeam={settings.team_number} onOpen={onTeam} />
+            <span class="scouting-search-rank">#{rank.rank}</span>
+          </div>
+        {/each}
+      {/if}
     </div>
   {/if}
 {/if}

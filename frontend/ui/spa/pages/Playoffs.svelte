@@ -5,13 +5,14 @@
   import { groupPlayoffRounds, resolveBracket } from '../lib/playoffs.js';
   import { teamsFor, isOurMatch } from '../lib/helpers.js';
   import MatchRow from '../components/MatchRow.svelte';
-  import TeamChip from '../components/TeamChip.svelte';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
 
   let { settings, onTeam, onMatch } = $props();
   let loading = $state(true),
     error = $state(''),
     matches = $state([]),
-    alliances = $state([]);
+    alliances = $state([]),
+    namesByNumber = $state({});
   const bracket = $derived(resolveBracket(alliances, matches));
   const rounds = $derived(groupPlayoffRounds(matches));
   const orderedSlots = $derived(bracket ? Object.values(bracket.slots) : []);
@@ -22,11 +23,18 @@
   onMount(() => {
     let active = true;
     const reload = () =>
-      Promise.all([api.playoffSchedule(), api.alliances()])
-        .then(([result, allianceData]) => {
+      Promise.all([
+        api.playoffSchedule(),
+        api.alliances(),
+        api.rankings().catch(() => ({ rankings: [] })),
+      ])
+        .then(([result, allianceData, rankData]) => {
           if (!active) return;
           matches = result.schedule || [];
           alliances = allianceData.alliances || allianceData.Alliances || [];
+          namesByNumber = Object.fromEntries(
+            (rankData.rankings || []).map((team) => [team.teamNumber, team]),
+          );
           loading = false;
         })
         .catch((e) => {
@@ -70,9 +78,12 @@
               {#if !members.length}<div class="po-member">TBD</div>{/if}
               {#each members as member, index (member)}
                 <div class="po-member" class:our={Number(member) === Number(settings.team_number)}>
-                  <button class="po-member-num" onclick={() => onTeam(member)}>
-                    {member}
-                  </button>{#if index === 0}<span class="po-member-role">Captain</span>{/if}
+                  <TeamIdentity
+                    team={namesByNumber[member] || { teamNumber: member }}
+                    ourTeam={settings.team_number}
+                    onOpen={onTeam}
+                  />
+                  {#if index === 0}<span class="po-member-role">Captain</span>{/if}
                 </div>
               {/each}
             </div>

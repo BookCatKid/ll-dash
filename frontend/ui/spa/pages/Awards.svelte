@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
   import { onPageRefresh } from '../lib/refresh.js';
   let { settings, onTeam } = $props();
   let loading = $state(true),
@@ -95,10 +96,16 @@
             Number(award.teamNumber) === Number(settings.team_number)}
         >
           {#if award.place}<span class="award-place">{award.place}</span>{/if}
-          {#if award.teamNumber}<button class="award-team" onclick={() => onTeam(award.teamNumber)}>
-              {award.teamNumber} · {names[award.teamNumber] ||
-                strip(award.fullTeamName || award.teamName)}
-            </button>{/if}
+          {#if award.teamNumber}
+            <TeamIdentity
+              team={{
+                teamNumber: award.teamNumber,
+                teamName: names[award.teamNumber] || strip(award.fullTeamName || award.teamName),
+              }}
+              ourTeam={settings.team_number}
+              onOpen={onTeam}
+            />
+          {/if}
           {#if award.person}<span>{award.person}</span>{/if}
         </div>
       {/each}

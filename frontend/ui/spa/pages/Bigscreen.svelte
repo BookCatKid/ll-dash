@@ -4,6 +4,7 @@
   import { onPageRefresh } from '../lib/refresh.js';
   import { formatTime, teamsFor, isOurMatch } from '../lib/helpers.js';
   import Icon from '../components/Icon.svelte';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
   let { settings, onExit } = $props();
   let clock = $state(new Date());
   let matches = $state([]),
@@ -116,12 +117,15 @@
           >
             <div class="bs-qnum">Q{match.matchNumber}</div>
             <div class="bs-teams">
-              {#each teamsFor(match, 'Red') as team}<span
-                  class="bs-chip red"
-                  class:our={Number(team.teamNumber) === Number(settings.team_number)}
-                >
-                  {team.teamNumber}
-                </span>{/each}
+              {#each teamsFor(match, 'Red') as team}
+                <TeamIdentity
+                  {team}
+                  alliance="red"
+                  ourTeam={settings.team_number}
+                  interactive={false}
+                  variant="display"
+                />
+              {/each}
             </div>
             {#if match.scoreRedFinal != null}<div class="bs-score">
                 <span class="bs-score-r">{match.scoreRedFinal}</span>–<span class="bs-score-b">
@@ -129,12 +133,15 @@
                 </span>
               </div>{:else}<div class="bs-time">{formatTime(match.startTime)}</div>{/if}
             <div class="bs-teams bs-right">
-              {#each teamsFor(match, 'Blue') as team}<span
-                  class="bs-chip blue"
-                  class:our={Number(team.teamNumber) === Number(settings.team_number)}
-                >
-                  {team.teamNumber}
-                </span>{/each}
+              {#each teamsFor(match, 'Blue') as team}
+                <TeamIdentity
+                  {team}
+                  alliance="blue"
+                  ourTeam={settings.team_number}
+                  interactive={false}
+                  variant="display"
+                />
+              {/each}
             </div>
             <div class="bs-field">{fields[String(match.matchNumber)] || ''}</div>
           </div>
@@ -149,9 +156,14 @@
             class="bs-rank-row"
             class:bs-ours={Number(rank.teamNumber) === Number(settings.team_number)}
           >
-            <span class="bs-rank-pos">{rank.rank}</span><span class="bs-rank-team">
-              {rank.teamNumber}
-            </span><span class="bs-rank-name">{rank.teamName}</span><span class="bs-rank-rp">
+            <span class="bs-rank-pos">{rank.rank}</span>
+            <TeamIdentity
+              team={rank}
+              ourTeam={settings.team_number}
+              interactive={false}
+              variant="display"
+            />
+            <span class="bs-rank-rp">
               {rank.sortOrder1?.toFixed(2) || '–'}
             </span><span class="bs-rank-wl">{rank.wins}–{rank.losses}</span>
           </div>
@@ -165,15 +177,27 @@
           <div class="bs-match" class:bs-ours={isOurMatch(match, settings.team_number)}>
             <span class="bs-qnum">M{match.matchNumber}</span>
             <div class="bs-teams">
-              {#each teamsFor(match, 'Red') as team}<span class="bs-chip red">
-                  {team.teamNumber}
-                </span>{/each}
+              {#each teamsFor(match, 'Red') as team}
+                <TeamIdentity
+                  {team}
+                  alliance="red"
+                  ourTeam={settings.team_number}
+                  interactive={false}
+                  variant="display"
+                />
+              {/each}
             </div>
             <div class="bs-score">{match.scoreRedFinal ?? '–'}–{match.scoreBlueFinal ?? '–'}</div>
             <div class="bs-teams bs-right">
-              {#each teamsFor(match, 'Blue') as team}<span class="bs-chip blue">
-                  {team.teamNumber}
-                </span>{/each}
+              {#each teamsFor(match, 'Blue') as team}
+                <TeamIdentity
+                  {team}
+                  alliance="blue"
+                  ourTeam={settings.team_number}
+                  interactive={false}
+                  variant="display"
+                />
+              {/each}
             </div>
           </div>
         {/each}

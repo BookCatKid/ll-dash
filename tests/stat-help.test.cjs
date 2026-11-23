@@ -72,8 +72,5 @@ test('match statistics explain alliance results and provide the actual calculati
   assert.match(statHelp.averageAuto.example(context), /36 Auto points ÷ 6 matches ≈ 6/);
   assert.match(statHelp.highScore.example(context), /55 points in qualification match Q15/);
   assert.match(statHelp.record.example(context), /1 win, 5 losses/);
-  assert.match(
-    statHelp.averageScore.details[0].text(context),
-    /shared by two robots/,
-  );
+  assert.match(statHelp.averageScore.details[0].text(context), /shared by two robots/);
 });

@@ -2,7 +2,7 @@ export const statHelp = {
   rank: {
     title: 'Qualification rank',
     description:
-      'Your position in the official qualification standings for the selected event. Rank 1 is the highest-ranked team.',
+      'This team’s position in the official qualification standings for the selected event. Rank 1 is the highest-ranked team.',
     calculation:
       'FIRST sorts teams by ranking score (average ranking points). When teams have the same ranking score, the official tiebreakers determine their order.',
     example: ({ rank, teamCount }) =>
@@ -30,14 +30,14 @@ export const statHelp = {
     description:
       'The results of your team’s completed qualification matches at the selected event.',
     calculation:
-      'LL Dash finds matches containing your team, checks the final Red and Blue scores, and counts wins, losses and ties. Playoff matches are not included.',
+      'LL Dash finds matches containing the selected team, checks the final Red and Blue scores, and counts wins, losses and ties. Playoff matches are not included.',
     example: ({ wins, losses, ties }) =>
       `${wins} ${wins === 1 ? 'win' : 'wins'}, ${losses} ${losses === 1 ? 'loss' : 'losses'}${ties ? `, ${ties} ${ties === 1 ? 'tie' : 'ties'}` : ''}.`,
     details: [
       {
         title: 'What counts as a win',
         text: () =>
-          'If your alliance has the higher final score, both teams win the match. A lower score is a loss; equal final scores are a tie.',
+          'If this team’s alliance has the higher final score, both teams win the match. A lower score is a loss; equal final scores are a tie.',
       },
       {
         title: 'Why it may differ from ranking',
@@ -73,7 +73,8 @@ export const statHelp = {
   },
   averageScore: {
     title: 'Average match score',
-    description: 'Your alliance’s average final score in completed qualification matches.',
+    description:
+      'The selected team’s alliance average final score in completed qualification matches.',
     calculation:
       'Average score = sum of your alliance’s final scores ÷ completed matches. LL Dash rounds to the nearest point.',
     example: ({ scoreTotal, playedCount, averageScore }) =>
@@ -84,7 +85,7 @@ export const statHelp = {
       {
         title: 'Alliance score, not robot score',
         text: () =>
-          'Each match score is shared by two robots. It is not the number of points your robot scored individually, and it does not separate your contributions from your partner’s.',
+          'Each match score is shared by two robots. It is not the number of points either robot scored individually, and it does not separate your contributions from your partner’s.',
       },
       {
         title: 'What is included',
@@ -96,7 +97,7 @@ export const statHelp = {
   averageAuto: {
     title: 'Average Auto score',
     description:
-      'Your alliance’s average points during the autonomous phase of completed qualification matches.',
+      'The selected team’s alliance average points during the autonomous phase of completed qualification matches.',
     calculation:
       'Average Auto = sum of alliance Auto scores ÷ completed matches. LL Dash rounds to the nearest point.',
     example: ({ autoTotal, playedCount, averageAuto }) =>
@@ -119,7 +120,7 @@ export const statHelp = {
   highScore: {
     title: 'Highest match score',
     description:
-      'The largest final alliance score recorded in a qualification match involving your team.',
+      'The largest final alliance score recorded in a qualification match involving the selected team.',
     calculation:
       'High score = maximum of the final alliance scores from your completed qualification matches.',
     example: ({ highMatch, highScore }) =>
@@ -153,7 +154,7 @@ export const statHelp = {
           'SO₂ excludes foul points and uses FIRST’s ranking divisor. The Dashboard’s average score instead uses the final alliance scores from completed scheduled matches. At league meets, the two denominators can differ.',
       },
       {
-        title: 'How it affects your rank',
+        title: 'How it affects the team’s rank',
         text: () =>
           'SO₂ only breaks a tie when teams have equal ranking scores. A higher SO₂ does not outrank a team with a higher ranking score.',
       },

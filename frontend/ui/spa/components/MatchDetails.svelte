@@ -11,7 +11,7 @@
   } from '../lib/helpers.js';
   import { matchOutcome, fieldLabel } from '../lib/match-data.js';
   import MatchAlliances from './MatchAlliances.svelte';
-  import TeamChip from './TeamChip.svelte';
+  import TeamIdentity from './TeamIdentity.svelte';
 
   let { match, settings, onTeam } = $props();
   let fetchedOfficial = $state(null);
@@ -285,15 +285,12 @@
                 <th scope="row">
                   <div class="match-scoring-robot-identity">
                     {#if row.team}
-                      <TeamChip
+                      <TeamIdentity
                         team={row.team}
                         alliance={row.side.toLowerCase()}
                         ourTeam={settings.team_number}
                         onOpen={onTeam}
                       />
-                      {#if row.team.teamName}<span class="match-scoring-robot-name">
-                          {row.team.teamName}
-                        </span>{/if}
                     {:else}Team unavailable{/if}
                   </div>
                 </th>

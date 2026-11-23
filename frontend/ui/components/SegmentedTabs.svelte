@@ -1,14 +1,15 @@
 <script>
-  import { onMount, tick } from 'svelte';
+  import { tick } from 'svelte';
+  import { Tabs } from 'bits-ui';
 
   let { items, activeTab, onSelect, extraClass = '' } = $props();
-  let container;
+  let container = $state(null);
   let indicator = $state(null);
   let indicatorReady = $state(false);
 
   function updateIndicator() {
     if (!container) return;
-    const selected = container.querySelector('.tab.active');
+    const selected = container.querySelector('[data-state="active"]');
     if (!selected) {
       indicator = null;
       return;
@@ -29,38 +30,30 @@
     const tabs = items;
     void selected;
     void tabs;
-    tick().then(updateIndicator);
-  });
-
-  onMount(() => {
-    const observer = new ResizeObserver(updateIndicator);
-    observer.observe(container);
-    return () => observer.disconnect();
+    void tick().then(updateIndicator);
   });
 </script>
 
-<div class="tabs svelte-tabs {extraClass}" role="tablist" bind:this={container}>
-  {#if indicator}
-    <span
-      class:ready={indicatorReady}
-      class="segmented-indicator"
-      style:left="{indicator.left}px"
-      style:width="{indicator.width}px"
-      aria-hidden="true"
-    ></span>
-  {/if}
+<Tabs.Root value={$activeTab} onValueChange={onSelect}>
+  <Tabs.List class="tabs svelte-tabs {extraClass}" bind:ref={container}>
+    {#if indicator}
+      <span
+        class:ready={indicatorReady}
+        class="segmented-indicator"
+        style:left="{indicator.left}px"
+        style:width="{indicator.width}px"
+        aria-hidden="true"
+      ></span>
+    {/if}
 
-  {#each items as item (item.key)}
-    <button
-      type="button"
-      role="tab"
-      class:active={$activeTab === item.key}
-      class="tab"
-      data-tab={item.key}
-      aria-selected={$activeTab === item.key}
-      onclick={() => onSelect(item.key)}
-    >
-      {item.label}
-    </button>
-  {/each}
-</div>
+    {#each items as item (item.key)}
+      <Tabs.Trigger
+        value={item.key}
+        class={$activeTab === item.key ? 'tab active' : 'tab'}
+        data-tab={item.key}
+      >
+        {item.label}
+      </Tabs.Trigger>
+    {/each}
+  </Tabs.List>
+</Tabs.Root>

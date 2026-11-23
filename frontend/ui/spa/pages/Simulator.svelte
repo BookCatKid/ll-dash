@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
-  import TeamChip from '../components/TeamChip.svelte';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
   import { api } from '../lib/api.js';
   import { onPageRefresh } from '../lib/refresh.js';
   import { teamsFor, computeRp, oprPrediction } from '../lib/helpers.js';
@@ -257,7 +257,7 @@
         <div class="match-num">Q{match.matchNumber}</div>
         <div class="match-alliances">
           <div class="alliance-teams">
-            {#each teamsFor(match, 'Red') as team}<TeamChip
+            {#each teamsFor(match, 'Red') as team}<TeamIdentity
                 {team}
                 alliance="red"
                 ourTeam={settings.team_number}
@@ -265,7 +265,7 @@
               />{/each}
           </div>
           <div class="alliance-teams">
-            {#each teamsFor(match, 'Blue') as team}<TeamChip
+            {#each teamsFor(match, 'Blue') as team}<TeamIdentity
                 {team}
                 alliance="blue"
                 ourTeam={settings.team_number}
@@ -331,11 +331,7 @@
               class:our-row={Number(row.teamNumber) === Number(settings.team_number)}
             >
               <td>{index + 1}</td><td>
-                <button onclick={() => onTeam(row.teamNumber)}>
-                  {row.teamNumber}<span style="display:block;font-size:.65rem;color:var(--text2)">
-                    {row.teamName}
-                  </span>
-                </button>
+                <TeamIdentity team={row} ourTeam={settings.team_number} onOpen={onTeam} />
               </td><td>{row.rpAvg.toFixed(3)}</td><td>{row.wins}–{row.losses}–{row.ties}</td>
             </tr>{/each}
         </tbody>

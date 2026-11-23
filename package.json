@@ -6,10 +6,11 @@
     "build": "vite build",
     "check": "svelte-check --tsconfig ./jsconfig.json",
     "test": "node --test tests/*.test.cjs",
-    "format": "prettier --write frontend/ui vite.config.js tests/scoring.test.cjs",
-    "format:check": "prettier --check frontend/ui vite.config.js tests/scoring.test.cjs"
+    "format": "prettier --write frontend/ui vite.config.js tests/*.test.cjs",
+    "format:check": "prettier --check frontend/ui vite.config.js tests/*.test.cjs"
   },
   "dependencies": {
+    "bits-ui": "^2.22.0",
     "svelte": "^5.59.1"
   },
   "devDependencies": {

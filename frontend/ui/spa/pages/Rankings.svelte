@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
   import { onPageRefresh } from '../lib/refresh.js';
   import { number } from '../lib/helpers.js';
   let { settings, onTeam } = $props();
@@ -119,17 +120,7 @@
           <tr class:our-row={Number(team.teamNumber) === Number(settings.team_number)}>
             <td>{team.rank}</td>
             <td>
-              <button
-                type="button"
-                onclick={() => onTeam(team.teamNumber)}
-                style="color:inherit;text-align:left"
-              >
-                <strong>{team.teamNumber}</strong><span
-                  style="display:block;font-size:.68rem;color:var(--text2)"
-                >
-                  {team.teamName}
-                </span>
-              </button>
+              <TeamIdentity {team} ourTeam={settings.team_number} onOpen={onTeam} />
             </td>
             <td>{team.wins}–{team.losses}</td>
             <td>{number(team.sortOrder1, 3)}</td>

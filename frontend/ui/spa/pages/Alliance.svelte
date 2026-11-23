@@ -3,6 +3,7 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import { api } from '../lib/api.js';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
   import { onPageRefresh } from '../lib/refresh.js';
   import { number } from '../lib/helpers.js';
 
@@ -96,18 +97,13 @@
             class:our-match={Number(team.teamNumber) === Number(settings.team_number)}
           >
             <span class="match-num">#{team.rank}</span>
-            <button
-              style="flex:1;min-width:0;text-align:left"
-              onclick={() => onTeam(team.teamNumber)}
-            >
-              <strong>{team.teamNumber}</strong><span style="color:var(--text2);font-size:.75rem">
-                {team.teamName}
-              </span>
-              <span style="display:block;font-size:.7rem;color:var(--text2)">
+            <div class="alliance-pick-team">
+              <TeamIdentity {team} ourTeam={settings.team_number} onOpen={onTeam} />
+              <span class="alliance-pick-metrics">
                 {team.wins}W · RP {number(team.sortOrder1, 3)} · OPR {number(team.opr?.opr)} · {team
                   .notes.length} notes
               </span>
-            </button>
+            </div>
             <div style="display:flex;gap:.25rem;flex-direction:column">
               {#each categories as category (category.key)}<button
                   class="flag-btn"

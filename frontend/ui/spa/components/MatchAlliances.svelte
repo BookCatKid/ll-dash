@@ -1,5 +1,5 @@
 <script>
-  import TeamChip from './TeamChip.svelte';
+  import TeamIdentity from './TeamIdentity.svelte';
   import { teamsFor } from '../lib/helpers.js';
 
   let { match, teamNumber, onTeam, compact = false, ranks = {} } = $props();
@@ -39,23 +39,18 @@
             class:our-team={Number(team.teamNumber) === Number(teamNumber)}
             class:compact
           >
-            <TeamChip
+            <TeamIdentity
               {team}
               alliance={alliance.side.toLowerCase()}
               ourTeam={teamNumber}
               onOpen={onTeam}
-            />
-            <div class="match-alliance-member-info">
-              {#if team.teamName || team.nameShort}<span
-                  class="match-alliance-member-name"
-                  title={team.teamName || team.nameShort}
-                >
-                  {team.teamName || team.nameShort}
-                </span>{/if}
-              {#if !compact}<span class="match-alliance-member-station">
+            >
+              {#if !compact}
+                <span class="match-alliance-member-station">
                   {team.station}{team.surrogate ? ' · Surrogate' : ''}{team.dq ? ' · DQ' : ''}
-                </span>{/if}
-            </div>
+                </span>
+              {/if}
+            </TeamIdentity>
             {#if !compact && ranks[team.teamNumber]}
               <span class="match-alliance-member-rank">#{ranks[team.teamNumber].rank}</span>
             {/if}

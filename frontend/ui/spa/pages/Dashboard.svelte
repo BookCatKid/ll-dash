@@ -2,12 +2,10 @@
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
   import MatchRow from '../components/MatchRow.svelte';
-  import TeamChip from '../components/TeamChip.svelte';
-  import StatHelp from '../components/StatHelp.svelte';
-  import Modal from '../components/Modal.svelte';
+  import TeamIdentity from '../components/TeamIdentity.svelte';
+  import TeamStatGrid from '../components/TeamStatGrid.svelte';
   import { isOurMatch, allianceFor, formatTime } from '../lib/helpers.js';
-  import { loadMatchData, matchOutcome } from '../lib/match-data.js';
-  import { statHelp } from '../lib/stat-help.js';
+  import { loadMatchData } from '../lib/match-data.js';
   import { onPageRefresh } from '../lib/refresh.js';
 
   let { settings, onMatch, onTeam, onNavigate } = $props();
@@ -17,74 +15,12 @@
   let matches = $state([]);
   let metrics = $state({ scores: {}, oprs: {} });
   let remaining = $state('');
-  let selectedStatId = $state(null);
   const teamNumber = $derived(Number(settings.team_number));
   const ourMatches = $derived(matches.filter((match) => isOurMatch(match, teamNumber)));
   const played = $derived(ourMatches.filter((m) => m.scoreRedFinal != null));
   const next = $derived(ourMatches.find((m) => m.scoreRedFinal == null));
   const last = $derived(played.at(-1));
   const rank = $derived(ranks.find((r) => Number(r.teamNumber) === teamNumber));
-  const teamScore = (m) =>
-    allianceFor(m, teamNumber) === 'Red' ? m.scoreRedFinal : m.scoreBlueFinal;
-  const teamAuto = (m) => (allianceFor(m, teamNumber) === 'Red' ? m.scoreRedAuto : m.scoreBlueAuto);
-  const wins = $derived(played.filter((match) => matchOutcome(match, teamNumber) === 'win').length);
-  const losses = $derived(
-    played.filter((match) => matchOutcome(match, teamNumber) === 'loss').length,
-  );
-  const ties = $derived(played.filter((match) => matchOutcome(match, teamNumber) === 'tie').length);
-  const average = (items, value) =>
-    items.length
-      ? Math.round(items.reduce((sum, m) => sum + (value(m) || 0), 0) / items.length)
-      : '–';
-  const highMatch = $derived(
-    played.reduce(
-      (highest, match) => (!highest || teamScore(match) > teamScore(highest) ? match : highest),
-      null,
-    ),
-  );
-  const stats = $derived([
-    { id: 'rank', label: 'Rank', value: rank ? `#${rank.rank}` : '–' },
-    {
-      id: 'record',
-      label: ties ? 'W–L–T' : 'W–L',
-      value: `${wins}–${losses}${ties ? `–${ties}` : ''}`,
-    },
-    { id: 'rp', label: 'RP avg', value: rank?.sortOrder1?.toFixed(3) ?? '–' },
-    { id: 'averageScore', label: 'Avg score', value: average(played, teamScore) },
-    { id: 'averageAuto', label: 'Avg Auto', value: average(played, teamAuto) },
-    { id: 'highScore', label: 'High score', value: highMatch ? teamScore(highMatch) : '–' },
-    { id: 'so2', label: 'SO₂', value: rank?.sortOrder2?.toFixed(2) ?? '–' },
-    {
-      id: 'matches',
-      label: 'Counted / played',
-      value:
-        rank?.matchesCounted != null && rank.matchesPlayed != null
-          ? `${rank.matchesCounted}/${rank.matchesPlayed}`
-          : '–',
-    },
-    { id: 'dq', label: 'DQ', value: rank?.dq ?? '–' },
-  ]);
-  const selectedStat = $derived(stats.find((stat) => stat.id === selectedStatId));
-  const helpContext = $derived({
-    season: settings.active_season,
-    rank,
-    teamCount: ranks.length,
-    wins,
-    losses,
-    ties,
-    playedCount: played.length,
-    scoreTotal: played.reduce((sum, match) => sum + (teamScore(match) || 0), 0),
-    autoTotal: played.reduce((sum, match) => sum + (teamAuto(match) || 0), 0),
-    averageScore: average(played, teamScore),
-    averageAuto: average(played, teamAuto),
-    highScore: highMatch ? teamScore(highMatch) : null,
-    highMatch,
-  });
-
-  function showStat(id) {
-    if (statHelp[id]) selectedStatId = id;
-  }
-
   onMount(() => {
     let active = true;
     let request = 0;
@@ -153,23 +89,19 @@
   {#if rank}
     <div class="card">
       <div class="card-header">
-        <span class="card-title">{teamNumber} · {rank.teamName}</span><span>
+        <span class="card-title dashboard-team-heading">
+          <TeamIdentity team={rank} ourTeam={teamNumber} onOpen={onTeam} />
+        </span><span>
           #{rank.rank} of {ranks.length}
         </span>
       </div>
-      <div class="stat-grid stat-grid-3">
-        {#each stats as stat (stat.id)}
-          <button
-            type="button"
-            class="stat-box stat-box-link"
-            aria-label={`Explain ${stat.label}`}
-            onclick={() => showStat(stat.id)}
-          >
-            <span class="stat-value">{stat.value}</span>
-            <span class="stat-label">{stat.label}</span>
-          </button>
-        {/each}
-      </div>
+      <TeamStatGrid
+        {rank}
+        matches={ourMatches}
+        {teamNumber}
+        teamCount={ranks.length}
+        season={settings.active_season}
+      />
     </div>
   {/if}
   {#if played.length}
@@ -195,24 +127,11 @@
   </div>
   <div class="card">
     {#each ranks.slice(0, 5) as entry (entry.teamNumber)}
-      <div
-        class="rank-summary-row"
-        style="display:flex;align-items:center;justify-content:space-between;padding:.45rem 0;gap:.5rem;border-bottom:1px solid var(--border)"
-      >
-        <span>#{entry.rank}</span><TeamChip
-          team={entry}
-          ourTeam={teamNumber}
-          onOpen={onTeam}
-        /><span>{entry.teamName}</span><span style="margin-left:auto">
-          {entry.sortOrder1?.toFixed(2) ?? '–'} RP
-        </span>
+      <div class="rank-summary-row">
+        <span class="rank-summary-position">#{entry.rank}</span>
+        <TeamIdentity team={entry} ourTeam={teamNumber} onOpen={onTeam} />
+        <span class="rank-summary-rp">{entry.sortOrder1?.toFixed(2) ?? '–'} RP</span>
       </div>
     {/each}
   </div>
-{/if}
-
-{#if selectedStat}
-  <Modal open title={statHelp[selectedStat.id].title} onClose={() => (selectedStatId = null)}>
-    <StatHelp stat={selectedStat} context={helpContext} />
-  </Modal>
 {/if}

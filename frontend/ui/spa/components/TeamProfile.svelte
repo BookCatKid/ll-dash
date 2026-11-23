@@ -2,9 +2,12 @@
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
   import { isOurMatch, allianceFor, computeRp, number as displayNumber } from '../lib/helpers.js';
+  import TeamStatGrid from './TeamStatGrid.svelte';
+  import TeamIdentity from './TeamIdentity.svelte';
 
   let { number, settings, notify, onScout, onMatch } = $props();
   let rank = $state(null);
+  let teamCount = $state(0);
   let matches = $state([]);
   let notes = $state([]);
   let categories = $state([]);
@@ -18,37 +21,6 @@
 
   const season = $derived(Number(settings.active_season));
   const played = $derived(matches.filter((match) => match.scoreRedFinal != null));
-  const wins = $derived(
-    played.filter((match) =>
-      allianceFor(match, number) === 'Red' ? match.redWins : match.blueWins,
-    ).length,
-  );
-  const teamScores = $derived(
-    played.map((match) => {
-      const red = allianceFor(match, number) === 'Red';
-      return {
-        total: red ? match.scoreRedFinal : match.scoreBlueFinal,
-        auto: red ? match.scoreRedAuto : match.scoreBlueAuto,
-      };
-    }),
-  );
-  const averageScore = $derived(
-    teamScores.length
-      ? Math.round(
-          teamScores.reduce((total, result) => total + result.total, 0) / teamScores.length,
-        )
-      : null,
-  );
-  const averageAuto = $derived(
-    teamScores.length
-      ? Math.round(
-          teamScores.reduce((total, result) => total + (result.auto || 0), 0) / teamScores.length,
-        )
-      : null,
-  );
-  const highScore = $derived(
-    teamScores.length ? Math.max(...teamScores.map((result) => result.total)) : null,
-  );
   const globalStats = $derived([
     { label: 'Total npOPR', data: stats?.tot || stats?.totalNp },
     { label: 'Auto OPR', data: stats?.auto || stats?.autonomousNp },
@@ -107,9 +79,9 @@
       .then(
         ([ranks, schedule, scouting, flagData, flags, fieldData, ftcData, events, scoreData]) => {
           if (!active) return;
-          rank =
-            (ranks.rankings || ranks.Rankings || []).find((row) => row.teamNumber === number) ||
-            null;
+          const rankedTeams = ranks.rankings || ranks.Rankings || [];
+          rank = rankedTeams.find((row) => Number(row.teamNumber) === Number(number)) || null;
+          teamCount = rankedTeams.length;
           matches = (schedule.schedule || []).filter((match) => isOurMatch(match, number));
           notes = Array.isArray(scouting) ? scouting : [];
           categories = flags || [];
@@ -159,50 +131,24 @@
 {:else if error}
   <div class="svelte-error">{error}</div>
 {:else}
-  <div style="font-size:1.1rem;font-weight:700;margin-bottom:.2rem">
-    {rank?.teamName || `Team ${number}`}
-  </div>
-  <div style="font-size:.73rem;color:var(--text2);margin-bottom:.75rem">
-    #{number} ·
-    <a
-      href="https://ftcscout.org/teams/{number}"
-      target="_blank"
-      rel="noopener"
-      style="color:var(--accent2)"
-    >
+  <div class="team-profile-heading">
+    <TeamIdentity
+      team={rank || { teamNumber: number, teamName: `Team ${number}` }}
+      ourTeam={settings.team_number}
+      interactive={false}
+    />
+    <a href="https://ftcscout.org/teams/{number}" target="_blank" rel="noopener noreferrer">
       FTCScout
     </a>
   </div>
-  <div class="stat-grid stat-grid-3" style="margin-bottom:.6rem">
-    <div class="stat-box">
-      <div class="stat-value">{rank?.rank ?? '–'}</div>
-      <div class="stat-label">Rank</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-value">{wins}–{played.length - wins}</div>
-      <div class="stat-label">W–L</div>
-    </div>
-    <div class="stat-box">
-      <div class="stat-value">{rank?.sortOrder1?.toFixed(3) ?? '–'}</div>
-      <div class="stat-label">RP avg</div>
-    </div>
-  </div>
-  {#if teamScores.length}
-    <div class="stat-grid stat-grid-3" style="margin-bottom:1rem">
-      <div class="stat-box">
-        <div class="stat-value">{averageScore}</div>
-        <div class="stat-label">Avg score</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-value">{averageAuto}</div>
-        <div class="stat-label">Avg Auto</div>
-      </div>
-      <div class="stat-box">
-        <div class="stat-value">{highScore}</div>
-        <div class="stat-label">High score</div>
-      </div>
-    </div>
-  {/if}
+  <TeamStatGrid
+    {rank}
+    {matches}
+    teamNumber={number}
+    {teamCount}
+    season={settings.active_season}
+    className="team-profile-stat-grid"
+  />
   {#if stats && (stats.tot || stats.totalNp)}
     <section class="card" style="margin-bottom:1rem">
       <div class="card-header">
