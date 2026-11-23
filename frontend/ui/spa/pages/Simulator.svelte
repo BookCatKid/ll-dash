@@ -3,8 +3,10 @@
   import { writable } from 'svelte/store';
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import TeamIdentity from '../components/TeamIdentity.svelte';
+  import SimulationMatchCard from '../components/SimulationMatchCard.svelte';
   import { api } from '../lib/api.js';
   import { onPageRefresh } from '../lib/refresh.js';
+  import { loadMatchData, estimatedMatchOutcome } from '../lib/match-data.js';
   import { teamsFor, computeRp, oprPrediction } from '../lib/helpers.js';
 
   let { settings, notify, onTeam } = $props();
@@ -23,6 +25,10 @@
       : ['movementRp', 'goalRp', 'patternRp'],
   );
   const maxRp = 6;
+  const unplayed = $derived(matches.filter((match) => match.scoreRedFinal == null));
+  const hasForecast = $derived(
+    unplayed.some((match) => estimatedMatchOutcome(match, oprs) != null),
+  );
   const bonusRates = $derived.by(() => {
     const team = {};
     const overall = Object.fromEntries(bonuses.map((b) => [b, [0, 0]]));
@@ -101,20 +107,13 @@
       return;
     }
     const reload = () =>
-      Promise.all([
-        api.rankings(),
-        api.schedule(),
-        api.ftcEventOprs(settings.active_event_code, season),
-        api.ftcEventScores(settings.active_event_code, season),
-      ])
-        .then(([r, s, o, sc]) => {
+      Promise.all([api.rankings(), api.schedule(), loadMatchData(settings)])
+        .then(([r, s, matchData]) => {
           if (!active) return;
           rankings = r.rankings || r.Rankings || [];
           matches = s.schedule || [];
-          oprs = Object.fromEntries((o?.oprList || []).map((row) => [row.teamNumber, row]));
-          scores = Object.fromEntries(
-            (sc?.matches || []).map((m) => [m.matchNum, { red: m.red, blue: m.blue }]),
-          );
+          oprs = matchData.oprs;
+          scores = matchData.scores;
           const initial = {};
           for (const match of matches) {
             if (match.scoreRedFinal == null) {
@@ -174,6 +173,7 @@
     return played ? earned / played : 0.33;
   }
   function estimate(match) {
+    if (!estimatedMatchOutcome(match, oprs)) return null;
     const red = teamsFor(match, 'Red'),
       blue = teamsFor(match, 'Blue');
     const pred = oprPrediction(red, blue, oprs);
@@ -189,27 +189,26 @@
       pred,
     };
   }
-  function change(match, side, increment) {
+  function setRp(match, side, value) {
     const previous = sim[match.matchNumber] || { red: 0, blue: 0, played: false };
     sim = {
       ...sim,
       [match.matchNumber]: {
         ...previous,
-        [side]: Math.max(0, Math.min(maxRp, previous[side] + increment)),
+        [side]: Math.max(0, Math.min(maxRp, value)),
         predictedWinner: null,
       },
     };
   }
   function predict(match) {
-    sim = { ...sim, [match.matchNumber]: estimate(match) };
+    const prediction = estimate(match);
+    if (prediction) sim = { ...sim, [match.matchNumber]: prediction };
   }
   function predictAll() {
-    sim = {
-      ...sim,
-      ...Object.fromEntries(
-        matches.filter((m) => m.scoreRedFinal == null).map((m) => [m.matchNumber, estimate(m)]),
-      ),
-    };
+    const predictions = unplayed
+      .map((match) => [match.matchNumber, estimate(match)])
+      .filter(([, prediction]) => prediction != null);
+    sim = { ...sim, ...Object.fromEntries(predictions) };
   }
   function reset() {
     sim = {
@@ -240,82 +239,33 @@
   />
   {#if tab === 'schedule'}
     <div class="sim-top-bar">
-      <button class="btn btn-primary btn-sm" onclick={predictAll}>Predict all</button><button
-        class="btn btn-secondary btn-sm"
-        onclick={reset}
-      >
+      <button class="btn btn-primary btn-sm" disabled={!hasForecast} onclick={predictAll}>
+        Predict all
+      </button><button class="btn btn-secondary btn-sm" disabled={!unplayed.length} onclick={reset}>
         Reset
       </button>
     </div>
+    {#if !unplayed.length}
+      <p class="sim-rp-rules">
+        All qualification matches are complete. Adjust RP values to explore alternate standings.
+      </p>
+    {:else if !hasForecast}
+      <p class="sim-rp-rules">
+        Estimates are unavailable until OPR data is available. You can still enter RP values
+        manually.
+      </p>
+    {/if}
     {#each matches as match (match.matchNumber)}
-      <div
-        class="match-row"
-        class:our-match={match.teams?.some(
-          (t) => Number(t.teamNumber) === Number(settings.team_number),
-        )}
-      >
-        <div class="match-num">Q{match.matchNumber}</div>
-        <div class="match-alliances">
-          <div class="alliance-teams">
-            {#each teamsFor(match, 'Red') as team}<TeamIdentity
-                {team}
-                alliance="red"
-                ourTeam={settings.team_number}
-                onOpen={onTeam}
-              />{/each}
-          </div>
-          <div class="alliance-teams">
-            {#each teamsFor(match, 'Blue') as team}<TeamIdentity
-                {team}
-                alliance="blue"
-                ourTeam={settings.team_number}
-                onOpen={onTeam}
-              />{/each}
-          </div>
-          {#if match.scoreRedFinal != null}<div style="font-size:.7rem;color:var(--text2)">
-              {match.scoreRedFinal}–{match.scoreBlueFinal}
-            </div>
-          {:else}{@const prediction = oprPrediction(
-              teamsFor(match, 'Red'),
-              teamsFor(match, 'Blue'),
-              oprs,
-            )}
-            {#if prediction.hasData}<div style="font-size:.7rem;color:var(--text2)">
-                {prediction.winner} favored · {prediction.confidence}%
-              </div>{/if}
-          {/if}
-        </div>
-        <div class="sim-ctrl-col">
-          {#each ['red', 'blue'] as side}
-            <div class="sim-rp-row">
-              <button
-                class="sim-rp-btn"
-                aria-label={`Decrease ${side} RP`}
-                onclick={() => change(match, side, -1)}
-              >
-                −
-              </button><span
-                class="sim-rp-num"
-                style:color={side === 'red' ? 'var(--alliance-red)' : 'var(--alliance-blue)'}
-              >
-                {sim[match.matchNumber]?.[side] ?? '–'}
-              </span><button
-                class="sim-rp-btn"
-                aria-label={`Increase ${side} RP`}
-                onclick={() => change(match, side, 1)}
-              >
-                +
-              </button>
-            </div>
-          {/each}
-          {#if match.scoreRedFinal == null}<button
-              class="sim-auto-btn"
-              onclick={() => predict(match)}
-            >
-              Predict
-            </button>{/if}
-        </div>
-      </div>
+      <SimulationMatchCard
+        {match}
+        entry={sim[match.matchNumber]}
+        teamNumber={settings.team_number}
+        {oprs}
+        {maxRp}
+        {onTeam}
+        onChange={(side, value) => setRp(match, side, value)}
+        onPredict={() => predict(match)}
+      />
     {/each}
   {:else}
     <div class="projection-banner">

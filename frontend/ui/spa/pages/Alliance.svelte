@@ -4,6 +4,7 @@
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import { api } from '../lib/api.js';
   import TeamIdentity from '../components/TeamIdentity.svelte';
+  import FlagButton from '../components/FlagButton.svelte';
   import { onPageRefresh } from '../lib/refresh.js';
   import { number } from '../lib/helpers.js';
 
@@ -105,14 +106,14 @@
               </span>
             </div>
             <div style="display:flex;gap:.25rem;flex-direction:column">
-              {#each categories as category (category.key)}<button
-                  class="flag-btn"
-                  class:active={team.flag === category.key}
-                  title={category.label}
-                  onclick={() => toggleFlag(team, category.key)}
-                >
-                  {category.icon || category.label}
-                </button>{/each}
+              {#each categories as category (category.key)}
+                <FlagButton
+                  flag={category}
+                  selected={team.flag === category.key}
+                  compact
+                  onSelect={() => toggleFlag(team, category.key)}
+                />
+              {/each}
             </div>
           </div>
         {/each}

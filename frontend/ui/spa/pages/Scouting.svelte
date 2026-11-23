@@ -4,6 +4,8 @@
   import SegmentedTabs from '../../components/SegmentedTabs.svelte';
   import { api } from '../lib/api.js';
   import TeamIdentity from '../components/TeamIdentity.svelte';
+  import ScoutingField from '../components/ScoutingField.svelte';
+  import FlagButton from '../components/FlagButton.svelte';
   import { onPageRefresh } from '../lib/refresh.js';
   import Icon from '../components/Icon.svelte';
   import { formatTime } from '../lib/helpers.js';
@@ -46,7 +48,9 @@
         (rank.teamName || '').toLowerCase().includes(query.toLowerCase()),
     ),
   );
-  const upcoming = $derived(schedule.filter((match) => match.scoreRedFinal == null));
+  const availableMatches = $derived(
+    [...schedule].sort((left, right) => left.matchNumber - right.matchNumber),
+  );
   const groupedNotes = $derived(
     Object.entries(
       notes.reduce((groups, note) => {
@@ -136,13 +140,24 @@
     saving = true;
     try {
       await api.addScouting(payload);
-      if (chosenFlag !== 'neutral') await api.setFlag(teamNumber, chosenFlag).catch(() => {});
-      localStorage.setItem('scout_name', scoutName);
+      let flagError = null;
+      if (chosenFlag !== 'neutral') {
+        try {
+          await api.setFlag(teamNumber, chosenFlag);
+        } catch (error) {
+          flagError = error;
+        }
+      }
+      try {
+        localStorage.setItem('scout_name', scoutName);
+      } catch {
+        // The note was already saved; disabled local storage must not report failure.
+      }
       values = {};
       teamInput = '';
       matchNumber = '';
       chosenFlag = 'neutral';
-      notify('Note saved');
+      notify(flagError ? `Note saved, but flag update failed: ${flagError.message}` : 'Note saved');
     } catch (e) {
       notify(e.message || 'Save failed');
     } finally {
@@ -158,8 +173,8 @@
       notify(e.message);
     }
   }
-  function changeStar(field, value) {
-    values = { ...values, [field]: value };
+  function updateField(key, value) {
+    values = { ...values, [key]: value };
   }
 </script>
 
@@ -212,63 +227,34 @@
             id="sc-match"
             bind:value={matchNumber}
           >
-            <option value="">General</option>{#each upcoming as match}<option
-                value={match.matchNumber}
-              >
-                Q{match.matchNumber} · {formatTime(match.startTime)}
-              </option>{/each}
+            <option value="">General</option>
+            {#each availableMatches as match (match.matchNumber)}
+              <option value={match.matchNumber}>
+                Q{match.matchNumber} · {match.scoreRedFinal != null
+                  ? 'Played'
+                  : formatTime(match.startTime)}
+              </option>
+            {/each}
           </select>
         </div>
       </div>
       {#each fields as field (field.key)}
-        <div class="form-group">
-          <span class="form-label">{field.label}{field.required ? ' *' : ''}</span>
-          {#if field.type === 'stars'}<div class="star-rating">
-              {#each [1, 2, 3, 4, 5] as star}<button
-                  class="star"
-                  class:active={Number(values[field.key] || 0) >= star}
-                  onclick={() => changeStar(field.key, star)}
-                >
-                  ★
-                </button>{/each}
-            </div>
-          {:else if field.type === 'textarea'}<textarea
-              class="form-textarea"
-              placeholder={field.placeholder || ''}
-              bind:value={values[field.key]}></textarea>
-          {:else if field.type === 'number'}<input
-              class="form-input"
-              type="number"
-              placeholder={field.placeholder || '0'}
-              bind:value={values[field.key]}
-            />
-          {:else if field.type === 'select'}<select
-              class="form-select"
-              bind:value={values[field.key]}
-            >
-              <option value="">Select</option>{#each field.options || [] as option}<option
-                  value={option}
-                >
-                  {option}
-                </option>{/each}
-            </select>
-          {:else}<input
-              class="form-input"
-              placeholder={field.placeholder || ''}
-              bind:value={values[field.key]}
-            />{/if}
-        </div>
+        <ScoutingField
+          {field}
+          value={values[field.key]}
+          onChange={(value) => updateField(field.key, value)}
+        />
       {/each}
       <div class="form-group">
         <span class="form-label">Alliance flag</span>
         <div class="flag-row">
-          {#each [{ key: 'neutral', label: 'Neutral' }, ...flags] as flag (flag.key)}<button
-              class="flag-btn"
-              class:active={chosenFlag === flag.key}
-              onclick={() => (chosenFlag = flag.key)}
-            >
-              {flag.label}
-            </button>{/each}
+          {#each [{ key: 'neutral', label: 'Neutral' }, ...flags] as flag (flag.key)}
+            <FlagButton
+              {flag}
+              selected={chosenFlag === flag.key}
+              onSelect={() => (chosenFlag = flag.key)}
+            />
+          {/each}
         </div>
       </div>
       <button class="btn btn-primary btn-block" disabled={saving} onclick={save}>

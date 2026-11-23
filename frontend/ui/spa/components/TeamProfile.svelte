@@ -5,6 +5,7 @@
   import TeamStatGrid from './TeamStatGrid.svelte';
   import TeamIdentity from './TeamIdentity.svelte';
   import TeamMatchHistory from './TeamMatchHistory.svelte';
+  import FlagButton from './FlagButton.svelte';
 
   let { number, settings, notify, onScout, onMatch } = $props();
   let rank = $state(null);
@@ -167,14 +168,7 @@
     <span class="form-label">Alliance flag</span>
     <div class="flag-row" style="flex-wrap:wrap">
       {#each [{ key: 'neutral', label: 'Neutral', color: 'var(--text2)', icon: '' }, ...categories] as flag (flag.key)}
-        <button
-          class="flag-btn"
-          class:active={chosen === flag.key}
-          style:border-color={chosen === flag.key ? flag.color : undefined}
-          onclick={() => setFlag(flag.key)}
-        >
-          {flag.icon ? `${flag.icon} ` : ''}{flag.label}
-        </button>
+        <FlagButton {flag} selected={chosen === flag.key} onSelect={() => setFlag(flag.key)} />
       {/each}
     </div>
   </div>
