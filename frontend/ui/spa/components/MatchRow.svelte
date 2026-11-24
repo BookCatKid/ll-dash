@@ -1,9 +1,17 @@
 <script>
   import MatchAlliances from './MatchAlliances.svelte';
-  import { formatTime, allianceFor } from '../lib/helpers.js';
+  import { allianceFor } from '../lib/helpers.js';
+  import { matchTimeLabel } from '../lib/match-timing.js';
   import { matchOutcome, fieldLabel, estimatedMatchOutcome } from '../lib/match-data.js';
 
-  let { match, teamNumber, onMatch = () => {}, onTeam = () => {}, metrics = {} } = $props();
+  let {
+    match,
+    teamNumber,
+    onMatch = () => {},
+    onTeam = () => {},
+    metrics = {},
+    now = Date.now(),
+  } = $props();
   const ours = $derived(
     match.teams?.some((team) => Number(team.teamNumber) === Number(teamNumber)) || false,
   );
@@ -56,7 +64,7 @@
     {#if outcome}<strong class="match-card-outcome">
         {outcome === 'win' ? 'Win' : outcome === 'loss' ? 'Loss' : 'Tie'}
       </strong>
-    {:else if !played}<time class="match-card-time">{formatTime(match.startTime)}</time>{/if}
+    {:else if !played}<span class="match-card-time">{matchTimeLabel(match, now)}</span>{/if}
   </div>
 
   <MatchAlliances {match} {teamNumber} {onTeam} compact />

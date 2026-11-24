@@ -10,10 +10,16 @@
     formatTime,
   } from '../lib/helpers.js';
   import { matchOutcome, fieldLabel } from '../lib/match-data.js';
+  import { matchTimeLabel } from '../lib/match-timing.js';
   import MatchAlliances from './MatchAlliances.svelte';
   import TeamIdentity from './TeamIdentity.svelte';
 
   let { match, settings, onTeam } = $props();
+  let now = $state(Date.now());
+  onMount(() => {
+    const timer = setInterval(() => (now = Date.now()), 1000);
+    return () => clearInterval(timer);
+  });
   let fetchedOfficial = $state(null);
   let fetchedScout = $state(null);
   let fetchedOprs = $state(null);
@@ -243,7 +249,7 @@
 
   {#if match.scoreRedFinal == null}
     <div class="match-detail-scheduled">
-      {formatTime(match.startTime)}{fieldLabel(match.field) ? ` · ${fieldLabel(match.field)}` : ''}
+      {matchTimeLabel(match, now)}{fieldLabel(match.field) ? ` · ${fieldLabel(match.field)}` : ''}
     </div>
   {:else if summary.length}
     <div class="match-detail-summary">

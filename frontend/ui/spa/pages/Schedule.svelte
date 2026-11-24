@@ -3,6 +3,7 @@
   import { writable } from 'svelte/store';
   import { api } from '../lib/api.js';
   import { isOurMatch } from '../lib/helpers.js';
+  import { withMatchEstimates } from '../lib/match-timing.js';
   import { loadMatchData } from '../lib/match-data.js';
   import { onPageRefresh } from '../lib/refresh.js';
   import MatchRow from '../components/MatchRow.svelte';
@@ -12,12 +13,14 @@
   let loading = $state(true);
   let error = $state('');
   let matches = $state([]);
+  let now = $state(Date.now());
+  const timedMatches = $derived(withMatchEstimates(matches));
   let metrics = $state({ scores: {}, oprs: {} });
   const filter = writable('all');
   let selected = $state('all');
   const teamNumber = $derived(Number(settings.team_number));
   const displayed = $derived(
-    matches.filter((match) => {
+    timedMatches.filter((match) => {
       if (selected === 'ours') return isOurMatch(match, teamNumber);
       if (selected === 'upcoming') return match.scoreRedFinal == null;
       return true;
@@ -47,9 +50,13 @@
     };
     void load();
     const unsubscribe = onPageRefresh(load);
+    const timer = setInterval(() => (now = Date.now()), 1000);
+    const refresh = setInterval(load, 45000);
     return () => {
       active = false;
       unsubscribe();
+      clearInterval(timer);
+      clearInterval(refresh);
     };
   });
 </script>
@@ -75,7 +82,7 @@
   />
   {#if displayed.length}
     {#each displayed as match (match.matchNumber)}
-      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} />
+      <MatchRow {match} {teamNumber} {onMatch} {onTeam} {metrics} {now} />
     {/each}
   {:else}
     <div class="empty-state">No matches.</div>

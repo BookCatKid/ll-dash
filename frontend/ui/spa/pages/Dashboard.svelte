@@ -4,7 +4,8 @@
   import MatchRow from '../components/MatchRow.svelte';
   import TeamIdentity from '../components/TeamIdentity.svelte';
   import TeamStatGrid from '../components/TeamStatGrid.svelte';
-  import { isOurMatch, allianceFor, formatTime } from '../lib/helpers.js';
+  import { isOurMatch } from '../lib/helpers.js';
+  import { withMatchEstimates, matchTimeLabel } from '../lib/match-timing.js';
   import { loadMatchData } from '../lib/match-data.js';
   import { onPageRefresh } from '../lib/refresh.js';
 
@@ -14,24 +15,22 @@
   let ranks = $state([]);
   let matches = $state([]);
   let metrics = $state({ scores: {}, oprs: {} });
-  let remaining = $state('');
+  let now = $state(Date.now());
+  const timedMatches = $derived(withMatchEstimates(matches));
   const teamNumber = $derived(Number(settings.team_number));
-  const ourMatches = $derived(matches.filter((match) => isOurMatch(match, teamNumber)));
+  const ourMatches = $derived(timedMatches.filter((match) => isOurMatch(match, teamNumber)));
   const played = $derived(ourMatches.filter((m) => m.scoreRedFinal != null));
   const next = $derived(ourMatches.find((m) => m.scoreRedFinal == null));
   const last = $derived(played.at(-1));
   const rank = $derived(ranks.find((r) => Number(r.teamNumber) === teamNumber));
+  const remaining = $derived.by(() => {
+    if (next?.estimatedStartTime == null || next.estimatedStartTime <= now) return '';
+    const seconds = Math.ceil((next.estimatedStartTime - now) / 1000);
+    return `${Math.floor(seconds / 3600)}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  });
   onMount(() => {
     let active = true;
     let request = 0;
-    const updateCountdown = () => {
-      if (!next?.startTime) {
-        remaining = '';
-        return;
-      }
-      const seconds = Math.max(0, Math.floor((Date.parse(next.startTime) - Date.now()) / 1000));
-      remaining = `${Math.floor(seconds / 3600)}:${String(Math.floor((seconds % 3600) / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-    };
     const load = async () => {
       const id = ++request;
       try {
@@ -42,7 +41,6 @@
         matches = scheduleData.schedule || [];
         error = '';
         loading = false;
-        updateCountdown();
         const matchData = await matchDataRequest;
         if (active && id === request) metrics = matchData;
       } catch (reason) {
@@ -53,11 +51,13 @@
       }
     };
     void load();
-    const timer = setInterval(updateCountdown, 1000);
+    const timer = setInterval(() => (now = Date.now()), 1000);
+    const refresh = setInterval(load, 45000);
     const unsubscribe = onPageRefresh(load);
     return () => {
       active = false;
       clearInterval(timer);
+      clearInterval(refresh);
       unsubscribe();
     };
   });
@@ -73,12 +73,12 @@
   {#if next}
     <div class="card-header dashboard-match-heading">
       <span class="card-title">Next match</span>
-      <time class="match-time">{formatTime(next.startTime)}</time>
+      <span class="match-time">{matchTimeLabel(next, now)}</span>
     </div>
     {#if remaining}<div class="countdown-block">
         <div class="countdown-time">{remaining}</div>
       </div>{/if}
-    <MatchRow match={next} {teamNumber} {onMatch} {onTeam} {metrics} />
+    <MatchRow match={next} {teamNumber} {onMatch} {onTeam} {metrics} {now} />
   {/if}
   {#if last}
     <div class="card-header dashboard-match-heading">

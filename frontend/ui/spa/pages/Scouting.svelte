@@ -8,11 +8,12 @@
   import FlagButton from '../components/FlagButton.svelte';
   import { onPageRefresh } from '../lib/refresh.js';
   import Icon from '../components/Icon.svelte';
-  import { formatTime } from '../lib/helpers.js';
+  import { withMatchEstimates, matchTimeLabel } from '../lib/match-timing.js';
   let { settings, notify, onTeam, initialTeam = null } = $props();
   let selected = $state('add');
   const selection = writable('add');
   let loading = $state(true);
+  let now = $state(Date.now());
   let ranks = $state([]),
     schedule = $state([]),
     fields = $state([]),
@@ -49,7 +50,7 @@
     ),
   );
   const availableMatches = $derived(
-    [...schedule].sort((left, right) => left.matchNumber - right.matchNumber),
+    withMatchEstimates(schedule).sort((left, right) => left.matchNumber - right.matchNumber),
   );
   const groupedNotes = $derived(
     Object.entries(
@@ -107,9 +108,11 @@
         });
     void reload();
     const unsubscribe = onPageRefresh(reload);
+    const timer = setInterval(() => (now = Date.now()), 1000);
     return () => {
       active = false;
       unsubscribe();
+      clearInterval(timer);
     };
   });
   async function save() {
@@ -232,7 +235,7 @@
               <option value={match.matchNumber}>
                 Q{match.matchNumber} · {match.scoreRedFinal != null
                   ? 'Played'
-                  : formatTime(match.startTime)}
+                  : matchTimeLabel(match, now)}
               </option>
             {/each}
           </select>

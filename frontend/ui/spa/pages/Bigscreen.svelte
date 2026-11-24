@@ -2,7 +2,8 @@
   import { onMount } from 'svelte';
   import { api } from '../lib/api.js';
   import { onPageRefresh } from '../lib/refresh.js';
-  import { formatTime, teamsFor, isOurMatch } from '../lib/helpers.js';
+  import { teamsFor, isOurMatch } from '../lib/helpers.js';
+  import { withMatchEstimates, matchTimeLabel } from '../lib/match-timing.js';
   import Icon from '../components/Icon.svelte';
   import TeamIdentity from '../components/TeamIdentity.svelte';
   let { settings, onExit } = $props();
@@ -19,9 +20,12 @@
     ['schedule', 'rankings', 'playoffs'].filter((key) => config.panels?.[key] !== false),
   );
   const shown = $derived(cycle ? [panels[index % panels.length]] : panels);
-  const nextIndex = $derived(matches.findIndex((m) => m.scoreRedFinal == null));
+  const timedMatches = $derived(withMatchEstimates(matches));
+  const nextIndex = $derived(timedMatches.findIndex((m) => m.scoreRedFinal == null));
   const visible = $derived(
-    nextIndex < 0 ? matches.slice(-12) : matches.slice(Math.max(0, nextIndex - 3), nextIndex + 10),
+    nextIndex < 0
+      ? timedMatches.slice(-12)
+      : timedMatches.slice(Math.max(0, nextIndex - 3), nextIndex + 10),
   );
   function toggleCycle() {
     cycle = !cycle;
@@ -112,7 +116,7 @@
           <div
             class="bs-match"
             class:bs-ours={isOurMatch(match, settings.team_number)}
-            class:bs-current={match === matches[nextIndex]}
+            class:bs-current={match === timedMatches[nextIndex]}
             class:bs-played={match.scoreRedFinal != null}
           >
             <div class="bs-qnum">Q{match.matchNumber}</div>
@@ -131,7 +135,7 @@
                 <span class="bs-score-r">{match.scoreRedFinal}</span>–<span class="bs-score-b">
                   {match.scoreBlueFinal}
                 </span>
-              </div>{:else}<div class="bs-time">{formatTime(match.startTime)}</div>{/if}
+              </div>{:else}<div class="bs-time">{matchTimeLabel(match, clock.getTime())}</div>{/if}
             <div class="bs-teams bs-right">
               {#each teamsFor(match, 'Blue') as team}
                 <TeamIdentity
