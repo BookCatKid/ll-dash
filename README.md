@@ -41,7 +41,7 @@ scouting workflow**. No code changes required.
 
 ## Stack
 
-Flask + SQLAlchemy (PostgreSQL or SQLite) backend, Svelte 5 frontend compiled with Vite. The generated bundle is checked in; production only needs Python.
+Flask + SQLAlchemy (PostgreSQL or SQLite) backend, Svelte 5 frontend compiled with Vite. The built bundle is **not** committed — `pnpm build` generates `frontend/static/build/` on demand, so deploys always serve a fresh build.
 
 ## Hosting and storage
 
@@ -107,17 +107,15 @@ The first visit launches the setup wizard, same as production.
 ## Frontend components
 
 Every application screen, dialog, and control is implemented in Svelte 5 under
-`frontend/ui/`. Flask serves the checked-in compiled bundle from
-`frontend/static/build/app.js`. Node.js is required for development and
-building the frontend, but not for running the deployed Flask service.
-
-After editing Svelte components, rebuild the checked-in asset:
+`frontend/ui/`. `pnpm build` compiles them to `frontend/static/build/`, which
+Flask serves at `/static/build/app.js`. The output is gitignored — always
+rebuild before deploying or testing UI changes.
 
 ```bash
-npm ci
-npm run check
-npm run build
-npm test
+pnpm install
+pnpm run check
+pnpm run build
+pnpm test
 ```
 
 ## Database setup & migrations
