@@ -1918,7 +1918,66 @@ html.light .opr-cmp-r{color:#c4313f}
 .match-detail-table { padding: .1rem 0 .35rem; }
 .match-detail-table .match-scoring-columns { background: transparent; }
 .match-detail-scheduled, .match-detail-time { font-size: .75rem; color: var(--text2); margin: .6rem 0; }
-.match-detail .match-scoring-robot-table { margin-bottom: .15rem; }
+.match-detail-breakdown .match-scoring-columns,
+.match-detail-breakdown .match-scoring-row {
+    grid-template-columns: minmax(0, 1.08fr) repeat(2, minmax(0, 1fr));
+    gap: .65rem;
+}
+.match-detail-breakdown .match-scoring-row {
+    padding-top: .65rem;
+    padding-bottom: .65rem;
+}
+.match-scoring-cell {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    text-align: right;
+    gap: .25rem;
+}
+.match-scoring-secondary {
+    color: var(--text2);
+    font-family: var(--font);
+    font-size: .7rem;
+    line-height: 1.4;
+}
+.match-scoring-robot-actions {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+}
+.match-scoring-robot-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .4rem;
+    text-align: left;
+    min-width: 0;
+    font-family: var(--font);
+}
+.match-scoring-robot-action .team-identity { flex: 1; }
+.match-scoring-robot-action .match-scoring-robot-result { flex-shrink: 0; font-size: .7rem; }
+.match-detail .match-scoring-flower {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: .75rem;
+}
+.match-detail .match-scoring-flower-heading { flex-shrink: 0; }
+.match-detail .match-scoring-flower-pieces { text-align: right; min-width: 0; }
+@media (max-width: 600px) {
+    .match-detail-breakdown .match-scoring-columns,
+    .match-detail-breakdown .match-scoring-row {
+        grid-template-columns: minmax(0, .7fr) repeat(2, minmax(0, 1fr));
+        gap: .35rem;
+        padding-left: .5rem;
+        padding-right: .5rem;
+    }
+    .match-scoring-robot-action { gap: .25rem; }
+    .match-scoring-robot-action .team-identity { gap: .25rem; }
+    .match-scoring-robot-action .team-chip { padding: 2px 4px; }
+    .match-scoring-robot-action .match-scoring-robot-result { font-size: .65rem; }
+}
+
 @media (max-width: 390px) {
     .match-detail .match-alliance-panel { padding: .55rem; }
     .match-detail .match-alliance-score { font-size: 1.7rem; }

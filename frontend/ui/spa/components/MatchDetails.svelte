@@ -85,37 +85,79 @@
   function bonusEarned(alliance, aliases) {
     return aliases.some((alias) => alliance?.[alias] === true);
   }
-  const metric = (label, key) => ({
+  const robotRows = $derived(robotStationRows(match, official));
+
+  function countLabel(value, label) {
+    return `${scoreValue(value)} ${label}`;
+  }
+
+  /**
+   * @typedef {object} ScoringRow
+   * @property {string} label
+   * @property {number | null | undefined} red
+   * @property {number | null | undefined} blue
+   * @property {boolean} [points]
+   * @property {string} [redDetail]
+   * @property {string} [blueDetail]
+   * @property {'leftWall' | 'autoPark' | 'teleopPark'} [robotAction]
+   */
+
+  /** @returns {ScoringRow} */
+  const metric = (label, key, options = {}) => ({
     label,
     red: red?.[key],
     blue: blue?.[key],
+    ...options,
   });
+
+  const points = (label, key, options = {}) => metric(label, key, { points: true, ...options });
+  const hasSummary = (label) => summary.some((item) => item.label === label);
+
+  /** @type {{name: string, rows: ScoringRow[]}[]} */
   const phases = $derived([
     {
       name: 'Autonomous',
       rows: [
-        metric('Leave points', 'autoLeavePoints'),
-        metric('Park points', 'autoParkPoints'),
-        metric('Hive points', 'autoHivePoints'),
-        metric('Auto total', 'autoPoints'),
+        points('Leave wall', 'autoLeavePoints', { robotAction: 'leftWall' }),
+        points('Park', 'autoParkPoints', { robotAction: 'autoPark' }),
+        points('Hive', 'autoHivePoints', {
+          redDetail: countLabel(red?.autoHiveTips, 'tips'),
+          blueDetail: countLabel(blue?.autoHiveTips, 'tips'),
+        }),
+        ...(!hasSummary('Auto') ? [metric('Auto total', 'autoPoints')] : []),
       ],
     },
     {
       name: 'TeleOp',
       rows: [
-        metric('Hive points', 'teleopHivePoints'),
-        metric('Flower points', 'teleopFlowerPoints'),
-        metric('Garden points', 'teleopGardenPoints'),
-        metric('Park points', 'teleopParkPoints'),
-        metric('TeleOp total', 'teleopPoints'),
+        points('Hive', 'teleopHivePoints', {
+          redDetail: `${countLabel(red?.teleopHivePollenNectar, 'pieces')} · ${countLabel(red?.teleopHiveTips, 'tips')}`,
+          blueDetail: `${countLabel(blue?.teleopHivePollenNectar, 'pieces')} · ${countLabel(blue?.teleopHiveTips, 'tips')}`,
+        }),
+        points('Flower', 'teleopFlowerPoints'),
+        points('Garden', 'teleopGardenPoints', {
+          redDetail: countLabel(red?.teleopGardenPollenNectar, 'pieces'),
+          blueDetail: countLabel(blue?.teleopGardenPollenNectar, 'pieces'),
+        }),
+        points('Park', 'teleopParkPoints', { robotAction: 'teleopPark' }),
+        ...(!hasSummary('TeleOp') ? [metric('TeleOp total', 'teleopPoints')] : []),
       ],
     },
     {
       name: 'Score',
       rows: [
         metric('Points scored', 'preFoulTotal'),
-        { label: 'Opponent fouls', red: blue?.foulPointsCommitted, blue: red?.foulPointsCommitted },
-        metric('Final score', 'totalPoints'),
+        {
+          label: 'Foul points received',
+          points: true,
+          red: blue?.foulPointsCommitted,
+          blue: red?.foulPointsCommitted,
+          redDetail: `Opponent fouls: ${countLabel(blue?.minorFouls, 'minor')} · ${countLabel(blue?.majorFouls, 'major')}`,
+          blueDetail: `Opponent fouls: ${countLabel(red?.minorFouls, 'minor')} · ${countLabel(red?.majorFouls, 'major')}`,
+        },
+        ...(red?.totalPoints !== match.scoreRedFinal || blue?.totalPoints !== match.scoreBlueFinal
+          ? [metric('Final score', 'totalPoints')]
+          : []),
       ],
     },
     {
@@ -126,40 +168,13 @@
           red: match.redWins ? 3 : tie ? 1 : 0,
           blue: match.blueWins ? 3 : tie ? 1 : 0,
         },
-        {
-          label: 'Swarm',
-          red: red?.swarmRP || red?.swarmRp ? 1 : 0,
-          blue: blue?.swarmRP || blue?.swarmRp ? 1 : 0,
-        },
-        {
-          label: 'Pollinator 1',
-          red: red?.pollinator1RP || red?.pollinator1Rp ? 1 : 0,
-          blue: blue?.pollinator1RP || blue?.pollinator1Rp ? 1 : 0,
-        },
-        {
-          label: 'Pollinator 2',
-          red: red?.pollinator2RP || red?.pollinator2Rp ? 1 : 0,
-          blue: blue?.pollinator2RP || blue?.pollinator2Rp ? 1 : 0,
-        },
-        { label: 'Total RP', red: redRP, blue: blueRP },
+        ...bonusFields.map((bonus) => ({
+          label: bonus.label,
+          red: bonusEarned(red, bonus.aliases) ? 1 : 0,
+          blue: bonusEarned(blue, bonus.aliases) ? 1 : 0,
+        })),
+        ...(!hasSummary('RP') ? [{ label: 'Total RP', red: redRP, blue: blueRP }] : []),
       ],
-    },
-  ]);
-  const fields = $derived([
-    { label: 'Auto hive tips', red: red?.autoHiveTips, blue: blue?.autoHiveTips },
-    { label: 'TeleOp hive tips', red: red?.teleopHiveTips, blue: blue?.teleopHiveTips },
-    { label: 'Hive pieces', red: red?.teleopHivePollenNectar, blue: blue?.teleopHivePollenNectar },
-    {
-      label: 'Garden pieces',
-      red: red?.teleopGardenPollenNectar,
-      blue: blue?.teleopGardenPollenNectar,
-    },
-    { label: 'Minor fouls', red: red?.minorFouls, blue: blue?.minorFouls },
-    { label: 'Major fouls', red: red?.majorFouls, blue: blue?.majorFouls },
-    {
-      label: 'Points given to opponent',
-      red: red?.foulPointsCommitted,
-      blue: blue?.foulPointsCommitted,
     },
   ]);
   const flowers = [
@@ -253,7 +268,7 @@
         <summary>
           {phase.name === 'Score' ? 'Score calculation' : `${phase.name} breakdown`}
         </summary>
-        <div class="match-detail-table">
+        <div class="match-detail-table match-detail-breakdown">
           <div class="match-scoring-columns">
             <span></span><strong>Red</strong><strong>Blue</strong>
           </div>
@@ -263,65 +278,46 @@
               class:total={item.label.includes('total') || item.label === 'Total RP'}
               class:final={item.label === 'Final score'}
             >
-              <span class="match-scoring-label">{item.label}</span><span class="match-scoring-red">
-                {scoreValue(item.red)}
-              </span><span class="match-scoring-blue">{scoreValue(item.blue)}</span>
+              <span class="match-scoring-label">{item.label}</span>
+              {#each ['Red', 'Blue'] as side}
+                {@const value = side === 'Red' ? item.red : item.blue}
+                {@const detail = side === 'Red' ? item.redDetail : item.blueDetail}
+                <div class="match-scoring-cell">
+                  <span class="match-scoring-{side.toLowerCase()}">
+                    {scoreValue(value)}{item.points && value != null ? ' pts' : ''}
+                  </span>
+                  {#if detail}
+                    <span class="match-scoring-secondary">{detail}</span>
+                  {/if}
+                  {#if item.robotAction}
+                    <div class="match-scoring-robot-actions">
+                      {#each robotRows.filter((row) => row.side === side) as row (row.station)}
+                        {@const result = row[item.robotAction]}
+                        <div class="match-scoring-robot-action" data-station={row.station}>
+                          {#if row.team}
+                            <TeamIdentity
+                              team={row.team}
+                              alliance={row.side.toLowerCase()}
+                              ourTeam={settings.team_number}
+                              onOpen={onTeam}
+                            />
+                          {:else}
+                            <span>Team unavailable</span>
+                          {/if}
+                          <span class="match-scoring-robot-result" class:yes={result === true}>
+                            {result == null ? '–' : result ? 'Yes' : 'No'}
+                          </span>
+                        </div>
+                      {/each}
+                    </div>
+                  {/if}
+                </div>
+              {/each}
             </div>
           {/each}
         </div>
       </details>
     {/each}
-    <details class="match-detail-expand">
-      <summary>Robot actions</summary>
-      <div class="match-scoring-expand-body">
-        <table class="match-scoring-robot-table">
-          <colgroup><col class="match-scoring-robot-team-col" /><col span="3" /></colgroup>
-          <thead>
-            <tr><th>Team</th><th>Left wall</th><th>Auto park</th><th>TeleOp park</th></tr>
-          </thead>
-          <tbody>
-            {#each robotStationRows(match, official) as row (row.station)}
-              <tr class="match-scoring-robot-row" data-station={row.station}>
-                <th scope="row">
-                  <div class="match-scoring-robot-identity">
-                    {#if row.team}
-                      <TeamIdentity
-                        team={row.team}
-                        alliance={row.side.toLowerCase()}
-                        ourTeam={settings.team_number}
-                        onOpen={onTeam}
-                      />
-                    {:else}Team unavailable{/if}
-                  </div>
-                </th>
-                {#each [row.leftWall, row.autoPark, row.teleopPark] as result}
-                  <td>
-                    <span class="match-scoring-robot-result" class:yes={result === true}>
-                      {result == null ? '–' : result ? 'Yes' : 'No'}
-                    </span>
-                  </td>
-                {/each}
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    </details>
-    <details class="match-detail-expand">
-      <summary>Hive and fouls</summary>
-      <div class="match-detail-table">
-        <div class="match-scoring-columns">
-          <span></span><strong>Red</strong><strong>Blue</strong>
-        </div>
-        {#each fields as item (item.label)}
-          <div class="match-scoring-row">
-            <span class="match-scoring-label">{item.label}</span><span class="match-scoring-red">
-              {scoreValue(item.red)}
-            </span><span class="match-scoring-blue">{scoreValue(item.blue)}</span>
-          </div>
-        {/each}
-      </div>
-    </details>
     <details class="match-detail-expand">
       <summary>Flower contents</summary>
       <div class="match-scoring-flower-list">
@@ -399,7 +395,7 @@
   {#if settings.advanced_predictions !== false && prediction.hasData}
     <details class="match-detail-expand" open={match.scoreRedFinal == null}>
       <summary>
-        OPR prediction{match.scoreRedFinal == null
+        OPR{match.scoreRedFinal == null
           ? ` · ${prediction.winner === 'Tie' ? 'Toss-up' : `${prediction.winner} favored ${prediction.confidence}%`}`
           : ''}
       </summary>
