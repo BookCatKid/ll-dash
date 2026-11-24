@@ -12,9 +12,13 @@ REMOTE=$(git rev-parse origin/main)
 git reset --hard origin/main -q || exit 0
 
 # Build the frontend bundle (not committed to git — always built fresh so
-# deploys can never serve a stale UI).
-corepack pnpm install --frozen-lockfile --prefer-offline >/dev/null 2>&1 \
-  && corepack pnpm run build >/dev/null 2>&1
+# deploys can never serve a stale UI). Log output so failures are debuggable.
+if ! corepack pnpm install --frozen-lockfile --prefer-offline >>/home/ubuntu/lldash/deploy.log 2>&1 \
+   || ! corepack pnpm run build >>/home/ubuntu/lldash/deploy.log 2>&1 \
+   || [ ! -f frontend/static/build/app.js ]; then
+  logger -t lldash-deploy "BUILD FAILED for $REMOTE — service not restarted"
+  exit 1
+fi
 
 .venv/bin/pip install -q -r requirements.txt
 sudo -n systemctl restart lldash
